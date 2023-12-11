@@ -5,10 +5,13 @@ from analytical_enclosure import analytical_expression_fractional_release
 
 encl_vol = 5.20e-11  # m3
 encl_surf = 2.16e-6  # m2
+l = 3.3e-5  # m
 R = 8.314
 avogadro = 6.022e23  # mol-1
 temperature = 2373  # K
 initial_pressure = 1e6  # Pa
+solubility = 7.244e22 / temperature  # H/m3/Pa
+diffusivity = 2.6237e-11  # m2/s
 
 
 def henrys_law(T, S_0, E_S, pressure):
@@ -55,20 +58,18 @@ class CustomSimulation(F.Simulation):
 
 my_model = CustomSimulation()
 
-l = 3.3e-5  # m
-
 vertices = np.linspace(0, l, 10)
 
 my_model.mesh = F.MeshFromVertices(vertices)
 
 my_model.materials = F.Material(
     id=1,
-    D_0=2.6237e-11,
+    D_0=diffusivity,
     E_D=0,
 )
 
 left_bc = CustomHenrysBC(
-    surfaces=1, H_0=7.244e22 / temperature, E_H=0, pressure=f.Constant(initial_pressure)
+    surfaces=1, H_0=solubility, E_H=0, pressure=f.Constant(initial_pressure)
 )
 
 my_model.boundary_conditions = [
@@ -111,7 +112,7 @@ import matplotlib.pyplot as plt
 plt.figure()
 plt.plot(t, fractional_release, linestyle="--")
 
-times = np.linspace(0, 200, 1000)
+times = np.linspace(0, my_model.settings.final_time, 1000)
 analytical = analytical_expression_fractional_release(
     t=times,
     P_0=initial_pressure,
