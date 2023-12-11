@@ -50,6 +50,20 @@ def get_roots_bis(L, N, step=0.0001):
 
 
 def analytical_expression_fractional_release(t, P_0, D, S, V, T, A, l):
+    """
+    FR = 1 - P(t) / P_0
+    where P(t) is the pressure at time t and P_0 is the initial pressure
+
+    Args:
+        t (float, ndarray): time (s)
+        P_0 (float): initial presure (Pa)
+        D (float): diffusivity (m2/s)
+        S (float): solubility (H/m3/Pa)
+        V (float): enclosure volume (m3)
+        T (float): temperature (K)
+        A (float): enclosure surface area (m2)
+        l (float): slab length (m)
+    """
     L = S * T * A * k / V
 
     roots = get_roots(L=L, l=l, N=1e6, step=1)
@@ -68,7 +82,6 @@ def analytical_expression_fractional_release(t, P_0, D, S, V, T, A, l):
 # FIXME this doesn't work
 # taken from https://mooseframework.inl.gov/TMAP8/verification/ver-1a.html#longhurst1992verification
 def analytical_expression_cumulative_release(t, D, S, V, T, A, l):
-    k = 1.38065e-23  # J/mol Boltzmann constant
     phi = 1 / (k * T * S)
     L = l * A / (V * phi)
     roots = get_roots_bis(L=L, N=2000, step=1e-3)
@@ -86,7 +99,20 @@ def analytical_expression_cumulative_release(t, D, S, V, T, A, l):
 
 
 def analytical_expression_flux(t, P_0, D, S, V, T, A, l):
-    k = 1.38065e-23  # J/mol Boltzmann constant
+    """
+    value of the flux at the external surface (not in contact with pressure)
+    J = -D * dc/dx
+
+    Args:
+        t (float, ndarray): time (s)
+        P_0 (float): initial presure (Pa)
+        D (float): diffusivity (m2/s)
+        S (float): solubility (H/m3/Pa)
+        V (float): enclosure volume (m3)
+        T (float): temperature (K)
+        A (float): enclosure surface area (m2)
+        l (float): slab length (m)
+    """
     L = S * T * A * k / V
 
     roots = get_roots(L=L, l=l, N=1e7, step=1)
@@ -115,16 +141,6 @@ def cumulative_flux(t, P_0, D, S, V, T, A, l):
 if __name__ == "__main__":
     T = 2373
     times = np.linspace(0, 45, 1000)
-    # FR = analytical_expression_fractional_release(
-    #     t=times,
-    #     P_0=1e6,
-    #     D=2.6237e-11,
-    #     S=7.244e22 / T,
-    #     V=5.20e-11,
-    #     T=T,
-    #     A=2.16e-6,
-    #     l=3.3e-5,
-    # )
     cum_flux = cumulative_flux(
         t=times,
         P_0=1e6,
