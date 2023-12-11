@@ -9,8 +9,21 @@ import matplotlib.pyplot as plt
 k = 1.38065e-23  # J/mol Boltzmann constant
 
 
-def get_roots(L, l, N, step=0.0001):
-    alphas = np.arange(0, N, step=step)[1:]
+def get_roots(L, l, alpha_max, step=0.0001):
+    """Gets the roots of alpha = L / tan(alpha * l)
+
+    Args:
+        L (float): parameter L
+        l (float): parameter l
+        alpha_max (float): the maximum alpha to consider
+        step (float, optional): the step discretising alphas.
+            The smaller the step, the more accurate the roots.
+            Defaults to 0.0001.
+
+    Returns:
+        np.array: array of roots
+    """
+    alphas = np.arange(0, alpha_max, step=step)[1:]
 
     f = alphas
 
@@ -66,7 +79,7 @@ def analytical_expression_fractional_release(t, P_0, D, S, V, T, A, l):
     """
     L = S * T * A * k / V
 
-    roots = get_roots(L=L, l=l, N=1e6, step=1)
+    roots = get_roots(L=L, l=l, alpha_max=1e6, step=1)
     print(len(roots))
     roots = roots[:, np.newaxis]
     summation = np.exp(-(roots**2) * D * t) / (l * (roots**2 + L**2) + L)
@@ -84,7 +97,7 @@ def analytical_expression_fractional_release(t, P_0, D, S, V, T, A, l):
 def analytical_expression_cumulative_release(t, D, S, V, T, A, l):
     phi = 1 / (k * T * S)
     L = l * A / (V * phi)
-    roots = get_roots_bis(L=L, N=2000, step=1e-3)
+    roots = get_roots_bis(L=L, alpha_max=2000, step=1e-3)
     roots = roots[:, np.newaxis]
     sec = 1 / np.cos(roots)
     summation = (2 * L * sec - np.exp(-(roots**2) * D * t / l**2)) / (
@@ -115,7 +128,7 @@ def analytical_expression_flux(t, P_0, D, S, V, T, A, l):
     """
     L = S * T * A * k / V
 
-    roots = get_roots(L=L, l=l, N=1e7, step=1)
+    roots = get_roots(L=L, l=l, alpha_max=1e7, step=1)
     roots = roots[:, np.newaxis]
 
     summation = (np.exp(-(roots**2) * D * t) * roots) / (
