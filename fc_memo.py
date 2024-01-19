@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 from matplotlib.lines import Line2D
 
 from scipy.integrate import solve_ivp
+from scipy.interpolate import interp1d
 
 my_problem = F.Simulation()
 
@@ -11,7 +12,7 @@ cross_sectional_area = 1  # m2
 my_problem.mesh = F.MeshFromVertices(np.linspace(0, 5e-3, 1000))
 V = my_problem.mesh.size * cross_sectional_area  # m3
 
-T_front = 600
+T_front = 400
 T_back = 400
 T = lambda x: T_front - (T_front - T_back) * x / my_problem.mesh.size
 
@@ -21,7 +22,9 @@ T_avg = (
     / my_problem.mesh.size
 )
 
-my_problem.boundary_conditions = []
+my_problem.boundary_conditions = [
+    # F.DirichletBC(surfaces=[1, 2], value=1e15, field=0),
+]
 my_problem.sources = [F.Source(1e15, volume=1, field=0)]
 
 tungsten = F.Material(
@@ -51,7 +54,11 @@ my_problem.dt = F.Stepsize(1)
 
 total_solute = F.TotalVolume("solute", volume=1)
 total_trapped = F.TotalVolume(1, volume=1)
-derived_quantities = F.DerivedQuantities([total_solute, total_trapped])
+flux_left = F.HydrogenFlux(surface=1)
+flux_right = F.HydrogenFlux(surface=2)
+derived_quantities = F.DerivedQuantities(
+    [total_solute, total_trapped, flux_left, flux_right]
+)
 
 my_problem.exports = [derived_quantities]
 
@@ -60,21 +67,34 @@ my_problem.run()
 
 
 S_bar = float(my_problem.sources[0].value)
-J_out = 0
+
+# Compute J_out
+flux_left_interpolated = interp1d(
+    flux_left.t, flux_left.data, bounds_error=False, fill_value=0
+)
+flux_right_interpolated = interp1d(
+    flux_right.t, flux_right.data, bounds_error=False, fill_value=0
+)
+J_out = lambda t: cross_sectional_area * (
+    flux_left_interpolated(t) + flux_right_interpolated(t)
+)
 
 trap = my_problem.traps.traps[0]
 k = trap.k_0 * np.exp(-trap.E_k / F.k_B / T_avg)
 p = trap.p_0 * np.exp(-trap.E_p / F.k_B / T_avg)
 
 
+# Solve 0D model
 def rhs(t, y):
     I_m, I_t = y
-    dImdt = S_bar * V - J_out - k * I_m * (n - I_t / V) + p * I_t
+    dImdt = S_bar * V - J_out(t) - k * I_m * (n - I_t / V) + p * I_t
     dItdt = k * I_m * (n - I_t / V) - p * I_t
     return [dImdt, dItdt]
 
 
 res = solve_ivp(rhs, (0, 100), y0=[0, 0], t_eval=total_solute.t[::2], method="Radau")
+
+# Plot results
 
 plt.figure()
 plt.plot(
