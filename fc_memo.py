@@ -25,6 +25,10 @@ T_avg = (
 my_problem.boundary_conditions = [
     # F.DirichletBC(surfaces=[1, 2], value=1e15, field=0),
 ]
+
+IC_m = F.InitialCondition(field=0, value=0)
+IC_t = F.InitialCondition(field=1, value=0)
+my_problem.initial_conditions = [IC_m, IC_t]
 my_problem.sources = [F.Source(1e15, volume=1, field=0)]
 
 tungsten = F.Material(
@@ -92,7 +96,14 @@ def rhs(t, y):
     return [dImdt, dItdt]
 
 
-res = solve_ivp(rhs, (0, 100), y0=[0, 0], t_eval=total_solute.t[::2], method="Radau")
+I_m_0, I_t_0 = IC_m.value * V, IC_t.value * V
+res = solve_ivp(
+    fun=rhs,
+    t_span=(0, my_problem.settings.final_time),
+    y0=[I_m_0, I_t_0],
+    t_eval=total_solute.t[::2],
+    method="Radau",
+)
 
 # Plot results
 
