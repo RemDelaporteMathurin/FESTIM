@@ -31,6 +31,8 @@ IC_t = F.InitialCondition(field=1, value=0)
 my_problem.initial_conditions = [IC_m, IC_t]
 my_problem.sources = [F.Source(1e15, volume=1, field=0)]
 
+S_avg = float(my_problem.sources[0].value)
+
 tungsten = F.Material(
     id=1,
     D_0=4.1e-07,  # m2/s
@@ -71,7 +73,6 @@ my_problem.run()
 
 # Build equivalent 0D model
 
-S_bar = float(my_problem.sources[0].value)
 
 # Compute J_out
 flux_left_interpolated = interp1d(
@@ -89,10 +90,9 @@ k = trap.k_0 * np.exp(-trap.E_k / F.k_B / T_avg)
 p = trap.p_0 * np.exp(-trap.E_p / F.k_B / T_avg)
 
 
-# Solve 0D model
 def rhs(t, y):
     I_m, I_t = y
-    dImdt = S_bar * V - J_out(t) - k * I_m * (n - I_t / V) + p * I_t
+    dImdt = S_avg * V - J_out(t) - k * I_m * (n - I_t / V) + p * I_t
     dItdt = k * I_m * (n - I_t / V) - p * I_t
     return [dImdt, dItdt]
 
