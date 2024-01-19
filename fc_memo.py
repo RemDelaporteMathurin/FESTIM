@@ -12,8 +12,8 @@ cross_sectional_area = 1  # m2
 my_problem.mesh = F.MeshFromVertices(np.linspace(0, 5e-3, 1000))
 V = my_problem.mesh.size * cross_sectional_area  # m3
 
-T_front = 400
-T_back = 400
+T_front = 1000
+T_back = 1000
 T = lambda x: T_front - (T_front - T_back) * x / my_problem.mesh.size
 
 my_problem.T = F.Temperature(T(F.x))
@@ -23,7 +23,7 @@ T_avg = (
 )
 
 my_problem.boundary_conditions = [
-    # F.DirichletBC(surfaces=[1, 2], value=1e15, field=0),
+    F.DirichletBC(surfaces=[1, 2], value=0, field=0),
 ]
 
 IC_m = F.InitialCondition(field=0, value=0)
@@ -50,7 +50,7 @@ my_problem.traps = F.Trap(
 )
 
 my_problem.settings = F.Settings(
-    absolute_tolerance=1e10,
+    absolute_tolerance=1e7,
     relative_tolerance=1e-10,
     final_time=100,
 )
@@ -69,6 +69,7 @@ my_problem.exports = [derived_quantities]
 my_problem.initialise()
 my_problem.run()
 
+# Build equivalent 0D model
 
 S_bar = float(my_problem.sources[0].value)
 
@@ -79,7 +80,7 @@ flux_left_interpolated = interp1d(
 flux_right_interpolated = interp1d(
     flux_right.t, flux_right.data, bounds_error=False, fill_value=0
 )
-J_out = lambda t: cross_sectional_area * (
+J_out = lambda t: -cross_sectional_area * (
     flux_left_interpolated(t) + flux_right_interpolated(t)
 )
 
