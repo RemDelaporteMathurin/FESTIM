@@ -11,13 +11,16 @@ cross_sectional_area = 1  # m2
 my_problem.mesh = F.MeshFromVertices(np.linspace(0, 5e-3, 1000))
 V = my_problem.mesh.size * cross_sectional_area  # m3
 
-T_front = 400
+T_front = 600
 T_back = 400
 T = lambda x: T_front - (T_front - T_back) * x / my_problem.mesh.size
 
-T_value = T(F.x)
-my_problem.T = F.Temperature(T_value)
-T_avg = np.mean(T(my_problem.mesh.size / 2))
+my_problem.T = F.Temperature(T(F.x))
+T_avg = (
+    np.trapz(T(my_problem.mesh.vertices), my_problem.mesh.vertices)
+    / my_problem.mesh.size
+)
+
 my_problem.boundary_conditions = []
 my_problem.sources = [F.Source(1e15, volume=1, field=0)]
 
