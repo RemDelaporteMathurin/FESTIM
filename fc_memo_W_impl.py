@@ -9,29 +9,19 @@ from scipy.interpolate import interp1d
 my_problem = F.Simulation()
 
 cross_sectional_area = 1  # m2
-my_problem.mesh = F.MeshFromVertices(np.linspace(0, 5e-3, 1000))
-V = my_problem.mesh.size * cross_sectional_area  # m3
-
-T_front = 400
-T_back = 300
-T = lambda x: T_front - (T_front - T_back) * x / my_problem.mesh.size
-
-my_problem.T = F.Temperature(T(F.x))
-T_avg = (
-    np.trapz(T(my_problem.mesh.vertices), my_problem.mesh.vertices)
-    / my_problem.mesh.size
+vertices = np.concatenate(
+    [
+        np.linspace(0, 30e-9, num=200),
+        np.linspace(30e-9, 3e-6, num=300),
+        np.linspace(3e-6, 20e-6, num=200),
+    ]
 )
 
-my_problem.boundary_conditions = [
-    F.DirichletBC(surfaces=[1, 2], value=0, field=0),
-]
+my_problem.mesh = F.MeshFromVertices(vertices)
+V = my_problem.mesh.size * cross_sectional_area  # m3
 
-IC_m = F.InitialCondition(field=0, value=0)
-IC_t = F.InitialCondition(field=1, value=0)
-my_problem.initial_conditions = [IC_m, IC_t]
-my_problem.sources = [F.Source(1e23, volume=1, field=0)]
-
-S_avg = float(my_problem.sources[0].value)
+my_problem.T = F.Temperature(300)
+T_avg = 300
 
 tungsten = F.Material(
     id=1,
@@ -39,6 +29,21 @@ tungsten = F.Material(
     E_D=0.39,  # eV
 )
 my_problem.materials = tungsten
+
+my_problem.boundary_conditions = [
+    F.ImplantationDirichlet(
+        surfaces=[1], phi=2.5e18, R_p=4.5e-9, D_0=tungsten.D_0, E_D=tungsten.E_D
+    ),
+    F.DirichletBC(surfaces=[2], value=0, field=0),
+]
+
+IC_m = F.InitialCondition(field=0, value=0)
+IC_t = F.InitialCondition(field=1, value=0)
+my_problem.initial_conditions = [IC_m, IC_t]
+
+S_avg = 0
+
+
 w_atom_density = 6.3e28  # atom/m3
 
 n = 1.3e-3 * w_atom_density
@@ -52,11 +57,14 @@ my_problem.traps = F.Trap(
 )
 
 my_problem.settings = F.Settings(
-    absolute_tolerance=1e10,
+    absolute_tolerance=1e7,
     relative_tolerance=1e-10,
-    final_time=1000,
+    final_time=100,
 )
-my_problem.dt = F.Stepsize(1)
+my_problem.dt = F.Stepsize(
+    initial_value=0.5,
+    stepsize_change_ratio=1.1,
+)
 
 total_solute = F.TotalVolume("solute", volume=1)
 total_trapped = F.TotalVolume(1, volume=1)
@@ -84,7 +92,6 @@ flux_right_interpolated = interp1d(
 J_out = lambda t: -cross_sectional_area * (
     flux_left_interpolated(t) + flux_right_interpolated(t)
 )
-
 trap = my_problem.traps.traps[0]
 k = trap.k_0 * np.exp(-trap.E_k / F.k_B / T_avg)
 p = trap.p_0 * np.exp(-trap.E_p / F.k_B / T_avg)
@@ -102,7 +109,7 @@ res = solve_ivp(
     fun=rhs,
     t_span=(0, my_problem.settings.final_time),
     y0=[I_m_0, I_t_0],
-    t_eval=total_solute.t[::20],
+    t_eval=total_solute.t,
     method="Radau",
 )
 
@@ -121,9 +128,6 @@ plt.plot(
     color="tab:orange",
     label="$I_t$",
 )
-
-plt.axhline(n * V, color="black", linestyle="--", label="$nV$")
-
 plt.scatter(res.t, res.y[0], color="tab:blue", alpha=0.6)
 plt.scatter(res.t, res.y[1], color="tab:orange", alpha=0.6)
 plt.yscale("log")
