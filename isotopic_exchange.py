@@ -54,10 +54,10 @@ my_model.species = [
     trapped_H,
     trapped_D,
 ]
-
+k_0 = 4.1e-7 / (1.1e-10**2 * 6 * w_atom_density)
 my_model.reactions = [
     F.Reaction(
-        k_0=4.1e-7 / (1.1e-10**2 * 6 * w_atom_density),
+        k_0=k_0,
         E_k=0.39,
         p_0=1e13,
         E_p=1.2,
@@ -67,7 +67,7 @@ my_model.reactions = [
         volume=my_subdomain,
     ),
     F.Reaction(
-        k_0=4.1e-7 / (1.1e-10**2 * 6 * w_atom_density),
+        k_0=k_0,
         E_k=0.39,
         p_0=1e13,
         E_p=1.2,
@@ -77,9 +77,9 @@ my_model.reactions = [
         volume=my_subdomain,
     ),
     F.Reaction(
-        k_0=4.1e-7 / (1.1e-10**2 * 6 * w_atom_density),
+        k_0=k_0,
         E_k=0.1,
-        p_0=4.1e-7 / (1.1e-10**2 * 6 * w_atom_density),
+        p_0=k_0,
         E_p=0.1,
         reactant1=mobile_H,
         reactant2=trapped_D,
@@ -219,4 +219,5 @@ plt.ylabel("Inventory (H/m2)")
 plt.gca().spines["top"].set_visible(False)
 plt.gca().spines["right"].set_visible(False)
 plt.savefig("swapping_term_example/inventory.png", dpi=300, bbox_inches="tight")
+plt.savefig("swapping_term_example/inventory.svg", bbox_inches="tight")
 plt.show()
