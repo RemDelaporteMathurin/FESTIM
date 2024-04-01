@@ -282,3 +282,71 @@ for ax, N_t_eff in zip(axs, [1e-10 * w_atom_density, 1e-2 * w_atom_density]):
 plt.xlabel("T (K)")
 plt.savefig("cavity/tds.png")
 plt.show()
+
+# -------- Fig 3 --------- #
+
+for R in [0, 1e-9]:
+
+    for N_t_eff in [
+        1e-8 * w_atom_density,
+        1e-6 * w_atom_density,
+        1e-4 * w_atom_density,
+        1e-2 * w_atom_density,
+    ]:
+
+        lambda_val = 1.12e-10  # m
+
+        my_model.reactions = [
+            CavityReaction(
+                N_t_eff=N_t_eff,
+                mobile=mobile_H,
+                product=trapped_H,
+                R=R,  # m
+                lambda_=lambda_val,
+                a_m=6 * w_atom_density * lambda_val,  # at / W * W/m3 * m = at/m2
+                nu_bs=tungsten.D_0 / lambda_val**2,
+                E_BS=tungsten.E_D,
+                nu_sb=1e13,
+                E_SB=1.5,
+                E_D=tungsten.E_D,
+                D_0=tungsten.D_0,
+                volume=my_subdomain,
+            )
+        ]
+
+        # fill the traps with hydrogen
+        my_model.initial_conditions = [
+            F.InitialCondition(value=N_t_eff, species=trapped_H)
+        ]
+
+        # data of derived quantities needs to be manually reset issue #728
+        left_flux.data = []
+        left_flux.t = []
+        right_flux.data = []
+        right_flux.t = []
+
+        # initialise and run model
+        my_model.initialise()
+        my_model.run()
+
+        total_H = N_t_eff * L
+
+        # plot the results
+        if R == 0:
+            linestyle = "solid"
+        else:
+            linestyle = "dashed"
+        plt.plot(
+            temp_function(np.array(left_flux.t)),
+            (np.array(left_flux.data) + np.array(right_flux.data)) / total_H,
+            label=f"R = {R*1e9:.0f} nm, $N_{{t, eff}}$ = {N_t_eff/w_atom_density:.0e} at.fr",
+            linestyle=linestyle,
+        )
+
+plt.ylim(bottom=0)
+plt.legend(ncols=2, bbox_to_anchor=(0.5, 1.5), loc="upper center")
+plt.ylabel("Outgassing flux (AU)")
+plt.xlabel("T (K)")
+plt.tight_layout()
+plt.savefig("cavity/tds_fig3.png")
+plt.show()
