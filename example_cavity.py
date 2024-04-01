@@ -1,3 +1,13 @@
+"""
+Implementation of the cavity model from the paper:
+M. Zibrov, K. Schmid,
+On the factors enhancing hydrogen trapping in spherical cavities in metals,
+Nuclear Materials and Energy,
+Volume 38, 2024, 101617,
+ISSN 2352-1791,
+https://doi.org/10.1016/j.nme.2024.101617.
+"""
+
 import festim as F
 from ufl import exp
 import math
