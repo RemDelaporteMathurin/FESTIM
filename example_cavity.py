@@ -70,18 +70,21 @@ class CavityReaction(F.Reaction):
 
         omega = self.omega(c_t=c_t, temperature=temperature)
 
-        trapping_rate = (
-            4
-            * math.pi
-            * self.R**2
-            * self.lambda_
-            / self.N_m
-            * self.nu_bs
-            / omega
-            * exp(-self.E_BS / (F.k_B * temperature))
-            * (self.N_t_eff - c_t)
-            * mobile
-        )
+        if self.R == 0:
+            trapping_rate = 0
+        else:
+            trapping_rate = (
+                4
+                * math.pi
+                * self.R**2
+                * self.lambda_
+                / self.N_m
+                * self.nu_bs
+                / omega
+                * exp(-self.E_BS / (F.k_B * temperature))
+                * (self.N_t_eff - c_t)
+                * mobile
+            )
         detrapping_rate = (
             self.nu_sb / omega * exp(-self.E_SB / (F.k_B * temperature)) * c_t
         )
