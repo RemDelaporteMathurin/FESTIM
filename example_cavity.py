@@ -116,7 +116,16 @@ class CavityReaction(F.Reaction):
         omega = self.omega(c_t=c_t, temperature=temperature)
 
         if self.R == 0:
-            trapping_rate = 0  # TODO check if this is really the case
+            # don't have it as a function of N_m or R
+            trapping_rate = (
+                1
+                / (6 * w_atom_density)
+                * self.nu_bs
+                / omega
+                * exp(-self.E_BS / (F.k_B * temperature))
+                * (self.N_t_eff - c_t)
+                * mobile
+            )
         else:
             trapping_rate = (
                 4
