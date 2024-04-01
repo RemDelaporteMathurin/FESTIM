@@ -12,7 +12,7 @@ class CavityReaction(F.Reaction):
         product: F.Species,
         R: float,
         lambda_: float,
-        N_m: float,
+        a_m: float,
         nu_bs: float,
         E_BS: float,
         nu_sb: float,
@@ -25,7 +25,7 @@ class CavityReaction(F.Reaction):
         self.mobile = mobile
         self.R = R
         self.lambda_ = lambda_
-        self.N_m = N_m
+        self.a_m = a_m
         self.E_BS = E_BS
         self.E_SB = E_SB
         self.E_D = E_D
@@ -45,6 +45,10 @@ class CavityReaction(F.Reaction):
             E_p=0,
             volume=volume,
         )
+
+    @property
+    def N_m(self):
+        return self.a_m * 4 * math.pi * self.R**2
 
     def omega(self, c_t, temperature):
         """Eq. 20
@@ -116,9 +120,6 @@ trapped_H = F.Species("trapped_H1", mobile=False)
 
 N_t_eff = 1e-10 * w_atom_density  # m-3
 lambda_val = 1.12e-10  # m
-a_m = 6 * w_atom_density * lambda_val  # at / W * W/m3 * m = at/m2
-R = 1e-9  # m
-N_m = a_m * 4 * math.pi * R**2  # at.
 
 my_model.species = [mobile_H, trapped_H]
 
@@ -127,9 +128,9 @@ my_model.reactions = [
         N_t_eff=N_t_eff,
         mobile=mobile_H,
         product=trapped_H,
-        R=R,
+        R=1e-8,  # m,
         lambda_=lambda_val,
-        N_m=N_m,
+        a_m=6 * w_atom_density * lambda_val,  # at / W * W/m3 * m = at/m2,
         nu_bs=tungsten.D_0 / lambda_val**2,
         E_BS=tungsten.E_D,
         nu_sb=1e13,
@@ -146,7 +147,7 @@ my_model.initial_conditions = [F.InitialCondition(value=N_t_eff, species=trapped
 
 implantation_temp = 400
 temperature_ramp = 0.1  # K/s
-final_temp = 600
+final_temp = 750
 
 
 def temp_function(t):
@@ -183,7 +184,7 @@ my_model.settings = F.Settings(
     final_time=(final_temp - implantation_temp) / temperature_ramp,
 )
 
-my_model.settings.stepsize = F.Stepsize(initial_value=1)
+my_model.settings.stepsize = F.Stepsize(initial_value=2)
 
 # -------- Run --------- #
 
