@@ -51,7 +51,6 @@ class CavityReaction(F.Reaction):
 
         Args:
             c_t (_type_): _description_
-            N_t (_type_): _description_
             temperature (_type_): _description_
 
         Returns:
@@ -65,7 +64,7 @@ class CavityReaction(F.Reaction):
         c_t = self.product.concentration
         mobile = self.mobile.concentration
 
-        omega = self.omega(c_t, temperature)
+        omega = self.omega(c_t=c_t, temperature=temperature)
 
         trapping_rate = (
             4
@@ -169,10 +168,8 @@ left_flux = F.SurfaceFlux(field=mobile_H, surface=left_surface)
 right_flux = F.SurfaceFlux(field=mobile_H, surface=right_surface)
 
 my_model.exports = [
-    # F.VTXExport("mobile_concentration_h.bp", field=mobile_H),
-    # F.VTXExport("trapped_concentration_h.bp", field=trapped_H1),
-    F.XDMFExport("mobile_concentration.xdmf", field=mobile_H),
-    F.XDMFExport("trapped_concentration.xdmf", field=trapped_H),
+    F.XDMFExport("cavity/mobile_concentration.xdmf", field=mobile_H),
+    F.XDMFExport("cavity/trapped_concentration.xdmf", field=trapped_H),
     left_flux,
     right_flux,
 ]
@@ -180,13 +177,13 @@ my_model.exports = [
 # -------- Settings --------- #
 
 my_model.settings = F.Settings(
-    atol=1e-10,
-    rtol=1e-10,
+    atol=1e-15,
+    rtol=1e-15,
     max_iterations=30,
     final_time=(final_temp - implantation_temp) / temperature_ramp,
 )
 
-my_model.settings.stepsize = F.Stepsize(initial_value=0.5)
+my_model.settings.stepsize = F.Stepsize(initial_value=1)
 
 # -------- Run --------- #
 
