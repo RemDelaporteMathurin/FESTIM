@@ -160,7 +160,7 @@ my_model = F.HydrogenTransportProblem()
 # -------- Mesh --------- #
 
 L = 1e-6
-vertices = np.linspace(0, L, num=1000)
+vertices = np.linspace(0, L, num=100)
 my_model.mesh = F.Mesh1D(vertices)
 
 
@@ -222,7 +222,7 @@ my_model.settings = F.Settings(
     final_time=(final_temp - implantation_temp) / temperature_ramp,
 )
 
-my_model.settings.stepsize = F.Stepsize(initial_value=10)
+my_model.settings.stepsize = F.Stepsize(initial_value=30)
 
 # -------- Run --------- #
 
