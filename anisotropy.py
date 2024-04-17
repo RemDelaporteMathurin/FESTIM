@@ -39,7 +39,11 @@ my_model.boundary_conditions = [
 
 my_model.sources = [F.ParticleSource(volume=my_subdomain, species=mobile_H, value=1)]
 
-my_model.exports = [F.XDMFExport("mobile_concentration.xdmf", field=mobile_H)]
+
+my_model.exports = [
+    F.XDMFExport("mobile_concentration.xdmf", field=mobile_H),
+    F.SurfaceFlux(mobile_H, boundary),
+]
 
 my_model.settings = F.Settings(
     atol=1e-10,
