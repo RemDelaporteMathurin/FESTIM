@@ -44,8 +44,8 @@ my_model.T = F.HeatTransferProblem(transient=False)
 my_model.boundary_conditions = [
     F.ImplantationDirichlet(surfaces=1, phi=1e19, R_p=4.5e-9, D_0=4.1e-07, E_D=0.39),
     F.DirichletBC(surfaces=2, value=0, field=0),
-    F.DirichletBC(surfaces=1, value=1100, field="T"),
-    F.DirichletBC(surfaces=2, value=350, field="T"),
+    F.DirichletBC(surfaces=1, value=600, field="T"),
+    F.DirichletBC(surfaces=2, value=600, field="T"),
 ]
 
 
