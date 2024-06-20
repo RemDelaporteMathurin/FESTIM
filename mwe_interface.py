@@ -333,18 +333,28 @@ h_b = 2 * cr(b_res)
 h_t = 2 * cr(t_res)
 gamma = 10.0
 
+W_0 = dolfinx.fem.functionspace(submesh_b, ("DG", 0))
+K_0 = dolfinx.fem.Function(W_0)
+K_0.x.array[:] = 2
+W_1 = dolfinx.fem.functionspace(submesh_t, ("DG", 0))
+K_1 = dolfinx.fem.Function(W_1)
+K_1.x.array[:] = 4
+
+K_b = K_0(b_res)
+K_t = K_1(t_res)
+
 
 F_0 = (
     -0.5 * mixed_term((u_b + u_t), v_b, n_b) * dInterface
-    - 0.5 * mixed_term(v_b, (u_b - u_t), n_b) * dInterface
+    - 0.5 * mixed_term(v_b, (u_b / K_b - u_t / K_t), n_b) * dInterface
 )
 
 F_1 = (
     +0.5 * mixed_term((u_b + u_t), v_t, n_b) * dInterface
-    - 0.5 * mixed_term(v_t, (u_b - u_t), n_b) * dInterface
+    - 0.5 * mixed_term(v_t, (u_b / K_b - u_t / K_t), n_b) * dInterface
 )
-F_0 += 2 * gamma / (h_b + h_t) * (u_b - u_t) * v_b * dInterface
-F_1 += -2 * gamma / (h_b + h_t) * (u_b - u_t) * v_t * dInterface
+F_0 += 2 * gamma / (h_b + h_t) * (u_b / K_b - u_t / K_t) * v_b * dInterface
+F_1 += -2 * gamma / (h_b + h_t) * (u_b / K_b - u_t / K_t) * v_t * dInterface
 
 F_0 += F_00
 F_1 += F_11
