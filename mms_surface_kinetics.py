@@ -24,11 +24,11 @@ my_model.sources = [
 lambda_IS = 0.002
 J_vs = 3 - D - 2 * lambda_IS
 surface_kinetics = F.SurfaceKinetics(
-    k_sb=20,
-    k_bs=20,
+    k_sb=2,
+    k_bs=2,
     lambda_IS=lambda_IS,
-    n_surf=30,
-    n_IS=40,
+    n_surf=3,
+    n_IS=4,
     J_vs=J_vs,
     surfaces=[1],
     initial_condition=0,
@@ -87,6 +87,9 @@ plt.figure()
 c_s_computed = my_model.exports[1][0].data
 t = my_model.exports[1][0].t
 
-plt.plot(t, c_s_computed)
-plt.plot(t, exact_solution_cs(np.array(t)))
+plt.plot(t, c_s_computed, label="computed")
+plt.plot(t, exact_solution_cs(np.array(t)), label="exact")
+plt.ylabel("$c_s$")
+plt.xlabel("t")
+plt.legend()
 plt.show()
