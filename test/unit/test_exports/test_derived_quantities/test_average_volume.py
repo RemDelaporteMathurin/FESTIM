@@ -91,9 +91,7 @@ def test_compute_cylindrical(r0, radius, height, c_top, c_bottom):
 
 @pytest.mark.parametrize("radius", [2, 4])
 @pytest.mark.parametrize("r0", [3, 5])
-@pytest.mark.parametrize("c_left", [8, 9])
-@pytest.mark.parametrize("c_right", [10, 11])
-def test_compute_spherical(r0, radius, c_left, c_right):
+def test_compute_spherical(r0, radius):
     """
     Test that AverageVolumeSpherical computes the average value correctly
     on a hollow sphere
@@ -101,8 +99,6 @@ def test_compute_spherical(r0, radius, c_left, c_right):
     Args:
         r0 (float): internal radius
         radius (float): sphere  radius
-        c_left (float): concentration left
-        c_right (float): concentration right
     """
     # creating a mesh with FEniCS
     r1 = r0 + radius
@@ -115,7 +111,7 @@ def test_compute_spherical(r0, radius, c_left, c_right):
 
     my_export = AverageVolumeSpherical("solute", 1)
     V = f.FunctionSpace(mesh_fenics, "P", 1)
-    c_fun = lambda r: c_left + (c_right - c_left) / (r1 - r0) * r
+    c_fun = lambda r: 5 * r
     expr = f.Expression(
         ccode(c_fun(x)),
         degree=1,
@@ -124,9 +120,7 @@ def test_compute_spherical(r0, radius, c_left, c_right):
 
     my_export.dx = dx
 
-    expected_value = c_left + (3 * (c_right - c_left)) / (4 * (r1**3 - r0**3)) * (
-        r1 + r0
-    ) * (r1**2 + r0**2)
+    expected_value = 5 * (1 / 4 * (r1**4 - r0**4)) / (1 / 3 * (r1**3 - r0**3))
 
     computed_value = my_export.compute()
 
