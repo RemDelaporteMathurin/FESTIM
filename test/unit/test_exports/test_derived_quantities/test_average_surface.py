@@ -132,7 +132,7 @@ def test_compute_spherical(r0, radius, c_left, c_right):
 
     my_export = AverageSurfaceSpherical("solute", right_id)
     V = f.FunctionSpace(mesh_fenics, "P", 1)
-    c_fun = lambda r: c_left + (c_right - c_left) / (r1 - r0) * r
+    c_fun = lambda r: c_left + (c_right - c_left) * (r - r0) / (r1 - r0)
     expr = f.Expression(
         ccode(c_fun(x)),
         degree=1,
@@ -141,7 +141,7 @@ def test_compute_spherical(r0, radius, c_left, c_right):
 
     my_export.ds = ds
 
-    expected_value = c_left + ((c_right - c_left) / (r1 - r0)) * r1
+    expected_value = c_fun(r=r1)
 
     computed_value = my_export.compute()
 
