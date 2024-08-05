@@ -77,15 +77,12 @@ def test_compute_cylindrical(r0, radius, height, c_top, c_bottom):
 
     my_export = AverageVolumeCylindrical("solute", 1)
     V = f.FunctionSpace(mesh_fenics, "P", 1)
-    c_fun = lambda z: c_bottom + (c_top - c_bottom) / (height) * z
-    expr = f.Expression(
-        ccode(c_fun(y)),
-        degree=1,
-    )
+    c_fun = lambda r: 3 * r
+    expr = f.Expression(ccode(c_fun(x)), degree=1)
     my_export.function = f.interpolate(expr, V)
     my_export.dx = dx
 
-    expected_value = (c_bottom + c_top) / 2
+    expected_value = 3 * 1 / 3 / (1 / 2) * (r1**3 - r0**3) / (r1**2 - r0**2)
 
     computed_value = my_export.compute()
 
