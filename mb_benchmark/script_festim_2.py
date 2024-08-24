@@ -19,23 +19,23 @@ mt = my_model.mesh.define_surface_meshtags()
 
 tungsten = F.Material(
     D_0=1,
-    E_D=0.390,
+    E_D=0,
     K_S_0=1,
-    E_K_S=1.04,
+    E_K_S=0,
 )
 
 copper = F.Material(
     D_0=1,
-    E_D=0.387,
+    E_D=0,
     K_S_0=2,
-    E_K_S=0.572,
+    E_K_S=0,
 )
 
 cucrzr = F.Material(
     D_0=1,
-    E_D=0.418,
+    E_D=0,
     K_S_0=3,
-    E_K_S=0.387,
+    E_K_S=0,
 )
 vol1 = F.VolumeSubdomain(id=1, material=tungsten)
 vol2 = F.VolumeSubdomain(id=2, material=copper)
@@ -62,46 +62,46 @@ empty_2 = F.ImplicitSpecies(n=0.5, others=[trapped_2])
 empty_3 = F.ImplicitSpecies(n=0.5, others=[trapped_3])
 
 
-my_model.species = [mobile]  # , trapped_1a, trapped_1b, trapped_2, trapped_3]
+my_model.species = [mobile, trapped_1a, trapped_1b, trapped_2, trapped_3]
 
-# my_model.reactions = [
-#     F.Reaction(
-#         reactant=[mobile, empty_1a],
-#         product=[trapped_1a],
-#         k_0=1,
-#         E_k=tungsten.E_D,
-#         p_0=0.1,
-#         E_p=0.87,
-#         volume=vol1,
-#     ),
-#     F.Reaction(
-#         reactant=[mobile, empty_1b],
-#         product=[trapped_1b],
-#         k_0=1,
-#         E_k=tungsten.E_D,
-#         p_0=0.1,
-#         E_p=1.0,
-#         volume=vol1,
-#     ),
-#     F.Reaction(
-#         reactant=[mobile, empty_2],
-#         product=[trapped_2],
-#         k_0=1,
-#         E_k=copper.E_D,
-#         p_0=0.1,
-#         E_p=0.5,
-#         volume=vol2,
-#     ),
-#     F.Reaction(
-#         reactant=[mobile, empty_3],
-#         product=[trapped_3],
-#         k_0=1,
-#         E_k=cucrzr.E_D,
-#         p_0=0.1,
-#         E_p=0.85,
-#         volume=vol3,
-#     ),
-# ]
+my_model.reactions = [
+    F.Reaction(
+        reactant=[mobile, empty_1a],
+        product=[trapped_1a],
+        k_0=1,
+        E_k=tungsten.E_D,
+        p_0=0.1,
+        E_p=0.87,
+        volume=vol1,
+    ),
+    F.Reaction(
+        reactant=[mobile, empty_1b],
+        product=[trapped_1b],
+        k_0=1,
+        E_k=tungsten.E_D,
+        p_0=0.1,
+        E_p=1.0,
+        volume=vol1,
+    ),
+    F.Reaction(
+        reactant=[mobile, empty_2],
+        product=[trapped_2],
+        k_0=1,
+        E_k=copper.E_D,
+        p_0=0.1,
+        E_p=0.5,
+        volume=vol2,
+    ),
+    F.Reaction(
+        reactant=[mobile, empty_3],
+        product=[trapped_3],
+        k_0=1,
+        E_k=cucrzr.E_D,
+        p_0=0.1,
+        E_p=0.85,
+        volume=vol3,
+    ),
+]
 
 my_model.temperature = 600
 my_model.boundary_conditions = [
@@ -115,16 +115,35 @@ my_model.surface_to_volume = {
     surface2: vol3,
 }
 
-my_model.settings = F.Settings(
-    atol=None, rtol=None, transient=False
-)  # , final_time=1000)
-# my_model.settings.stepsize = F.Stepsize(100)
+my_model.settings = F.Settings(atol=None, rtol=None, final_time=10)
+my_model.settings.stepsize = F.Stepsize(1)
 
 my_model.exports = [
     F.VTXExport(
-        f"results/fenicsx/mobile_{subdomain.id}.bp", field=mobile, subdomain=subdomain
+        f"results_festim_2/mobile_{subdomain.id}.bp", field=mobile, subdomain=subdomain
     )
     for subdomain in my_model.volume_subdomains
+] + [
+    F.VTXExport(
+        f"results_festim_2/trapped_{vol1.id}a.bp",
+        field=trapped_1a,
+        subdomain=vol1,
+    ),
+    F.VTXExport(
+        f"results_festim_2/trapped_{vol1.id}b.bp",
+        field=trapped_1b,
+        subdomain=vol1,
+    ),
+    F.VTXExport(
+        f"results_festim_2/trapped_{vol2.id}.bp",
+        field=trapped_2,
+        subdomain=vol2,
+    ),
+    F.VTXExport(
+        f"results_festim_2/trapped_{vol3.id}.bp",
+        field=trapped_3,
+        subdomain=vol3,
+    ),
 ]
 
 my_model.initialise()
