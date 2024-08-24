@@ -110,7 +110,7 @@ class NewtonSolver:
             if correction_norm < tol:
                 break
             i += 1
-            return i
+        return i
 
     def __del__(self):
         self.A.destroy()
