@@ -184,7 +184,7 @@ def two_cubes(filename, size=0.1):
     gmsh.finalize()
 
 
-def convert_mesh(filename):
+def convert_mesh(filename, volume_file="mesh/mesh.xdmf", boundary_file="mesh/mf.xdmf"):
     import meshio
     import numpy as np
 
@@ -238,8 +238,8 @@ def convert_mesh(filename):
     print("Volume IDs: ", np.unique(tetra_data))
 
     # Write the mesh files
-    meshio.write("mesh/mesh.xdmf", tetra_mesh)
-    meshio.write("mesh/mf.xdmf", triangle_mesh)
+    meshio.write(volume_file, tetra_mesh)
+    meshio.write(boundary_file, triangle_mesh)
 
 
 if __name__ == "__main__":
