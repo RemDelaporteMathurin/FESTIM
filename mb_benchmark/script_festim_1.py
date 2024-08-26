@@ -25,15 +25,7 @@ copper = F.Material(
     E_S=0.572,
 )
 
-cucrzr = F.Material(
-    id=3,
-    D_0=1,
-    E_D=0.418,
-    S_0=3,
-    E_S=0.387,
-)
-
-my_model.materials = [tungsten, copper, cucrzr]
+my_model.materials = [tungsten, copper]
 
 my_model.traps = F.Traps(
     [
@@ -46,12 +38,12 @@ my_model.traps = F.Traps(
             materials=tungsten,
         ),
         F.Trap(
-            k_0=[1, 1, 1],
-            E_k=[tungsten.E_D, copper.E_D, cucrzr.E_D],
-            p_0=[0.1, 0.1, 0.1],
-            E_p=[1.0, 0.5, 0.85],
-            density=[0.5, 0.5, 0.5],
-            materials=[tungsten, copper, cucrzr],
+            k_0=[1, 1],
+            E_k=[tungsten.E_D, copper.E_D],
+            p_0=[0.1, 0.1],
+            E_p=[1.0, 0.5],
+            density=[0.5, 0.5],
+            materials=[tungsten, copper],
         ),
     ]
 )
@@ -59,8 +51,8 @@ my_model.traps = F.Traps(
 my_model.T = 600
 
 my_model.boundary_conditions = [
-    F.DirichletBC(surfaces=[4], value=2, field=0),
-    F.DirichletBC(surfaces=[5], value=0, field=0),
+    F.DirichletBC(surfaces=[3], value=2, field=0),
+    F.DirichletBC(surfaces=[4], value=0, field=0),
 ]
 
 my_model.settings = F.Settings(
