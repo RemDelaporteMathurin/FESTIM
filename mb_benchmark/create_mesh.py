@@ -1,5 +1,23 @@
 import gmsh
 
+import os
+
+
+def save_mesh(filename):
+    # Extract the directory from the filename
+    directory = os.path.dirname(filename)
+
+    # If directory doesn't exist, create it
+    if not os.path.exists(directory):
+        os.makedirs(directory)
+        print(f"Directory '{directory}' created.")
+    else:
+        print(f"Directory '{directory}' already exists.")
+
+    # Save the mesh
+    gmsh.write(filename)
+    print(f"Mesh saved to '{filename}'")
+
 
 def three_cubes(filename, size=0.1):
     gmsh.initialize()
@@ -173,7 +191,7 @@ def two_cubes(filename, size=0.1):
     gmsh.model.mesh.generate(3)
 
     # Save the mesh
-    gmsh.write(filename)
+    save_mesh(filename)
 
     try:
         # If you want to visualize the mesh
@@ -243,5 +261,12 @@ def convert_mesh(filename, volume_file="mesh/mesh.xdmf", boundary_file="mesh/mf.
 
 
 if __name__ == "__main__":
-    two_cubes("mesh/mesh.msh")
-    convert_mesh("mesh/mesh.msh")
+    for size in [0.1, 0.07, 0.05, 0.025]:
+        two_cubes(f"mesh/size_{size}/mesh.msh", size=size)
+        volume_file = f"mesh/size_{size}/mesh.xdmf"
+        facet_file = f"mesh/size_{size}/mf.xdmf"
+        convert_mesh(
+            f"mesh/size_{size}/mesh.msh",
+            volume_file=volume_file,
+            boundary_file=facet_file,
+        )
