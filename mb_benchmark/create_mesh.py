@@ -1,7 +1,7 @@
 import gmsh
 
 
-def main(filename, size=0.1):
+def three_cubes(filename, size=0.1):
     gmsh.initialize()
 
     cube1 = gmsh.model.occ.addBox(x=0, y=0, z=0, dx=1, dy=1, dz=1)
@@ -101,6 +101,90 @@ def main(filename, size=0.1):
     gmsh.finalize()
 
 
+def two_cubes(filename, size=0.1):
+    gmsh.initialize()
+
+    # Define the first material cube
+    cube1 = gmsh.model.occ.addBox(x=0, y=0, z=0, dx=1, dy=1, dz=1)
+    # Define the second material cube
+    # Adjust the position to make the cubes touch each other
+    cube2 = gmsh.model.occ.addBox(x=1, y=0, z=0, dx=1, dy=1, dz=1)
+
+    gmsh.model.occ.synchronize()
+
+    # Perform a Boolean union to merge the cubes and their shared surfaces
+    gmsh.model.occ.fragment([(3, cube1)], [(3, cube2)])
+    gmsh.model.occ.synchronize()
+
+    # Create physical groups
+    gmsh.model.addPhysicalGroup(3, [cube1], 1)
+    gmsh.model.addPhysicalGroup(3, [cube2], 2)
+
+    # Tagging the surfaces
+    # Get the surfaces of cube 1 and cube 2
+    surfaces_cube1 = gmsh.model.getBoundary(
+        [(3, cube1)], oriented=False, recursive=False
+    )
+    surfaces_cube2 = gmsh.model.getBoundary(
+        [(3, cube2)], oriented=False, recursive=False
+    )
+
+    # Tag the left surface of cube 1
+    left_surface_cube1 = None
+    for surface in surfaces_cube1:
+        com = gmsh.model.occ.getCenterOfMass(surface[0], surface[1])
+        if com[0] == 0:
+            left_surface_cube1 = surface[1]
+            break
+
+    # Tag the right surface of cube 2
+    right_surface_cube2 = None
+    for surface in surfaces_cube2:
+        com = gmsh.model.occ.getCenterOfMass(surface[0], surface[1])
+        if com[0] == 2:
+            right_surface_cube2 = surface[1]
+            break
+
+    # Tag the interface between cube1 and cube2
+    interface_cube1_cube2 = []
+    for surface1 in surfaces_cube1:
+        for surface2 in surfaces_cube2:
+            if surface1[1] == surface2[1]:  # Check if the surfaces are the same
+                interface_cube1_cube2.append(surface1[1])
+
+    if left_surface_cube1 is not None:
+        gmsh.model.addPhysicalGroup(
+            2, [left_surface_cube1], 3
+        )  # Tag ID 3 for left surface of cube 1
+    if right_surface_cube2 is not None:
+        gmsh.model.addPhysicalGroup(
+            2, [right_surface_cube2], 4
+        )  # Tag ID 4 for right surface of cube 2
+    if interface_cube1_cube2:
+        gmsh.model.addPhysicalGroup(
+            2, interface_cube1_cube2, 5
+        )  # Tag ID 5 for the interface between cube1 and cube2
+
+    # set refinement
+    gmsh.model.mesh.setSize(
+        gmsh.model.getEntities(0), size
+    )  # Set mesh size for all points
+
+    # Generate the mesh
+    gmsh.model.mesh.generate(3)
+
+    # Save the mesh
+    gmsh.write(filename)
+
+    try:
+        # If you want to visualize the mesh
+        gmsh.fltk.run()
+    except:
+        pass
+
+    gmsh.finalize()
+
+
 def convert_mesh(filename):
     import meshio
     import numpy as np
@@ -160,5 +244,5 @@ def convert_mesh(filename):
 
 
 if __name__ == "__main__":
-    main("mesh/mesh.msh")
+    two_cubes("mesh/mesh.msh")
     convert_mesh("mesh/mesh.msh")
