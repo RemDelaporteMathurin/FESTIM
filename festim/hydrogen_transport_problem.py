@@ -772,7 +772,7 @@ class HTransportProblemDiscontinuous(HydrogenTransportProblem):
             ct_r = dolfinx.mesh.meshtags(
                 self.mesh.mesh,
                 self.mesh.mesh.topology.dim,
-                subdomain.submesh_to_mesh,
+                np.sort(subdomain.submesh_to_mesh),
                 np.full_like(subdomain.submesh_to_mesh, 1, dtype=np.int32),
             )
             subdomain.dx = ufl.Measure(
