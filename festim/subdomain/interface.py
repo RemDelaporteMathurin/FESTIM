@@ -11,11 +11,9 @@ class Interface:
     restriction: list[str, str] = ("+", "-")
     padded: bool
 
-    def __init__(self, parent_mesh, mt, id, subdomains):
+    def __init__(self, id, subdomains, mt=None, parent_mesh=None):
         self.id = id
         self.subdomains = tuple(subdomains)
-        self.mt = mt
-        self.parent_mesh = parent_mesh
 
     def pad_parent_maps(self):
         """Workaround to make sparsity-pattern work without skips"""

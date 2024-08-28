@@ -752,6 +752,9 @@ class HTransportProblemDiscontinuous(HydrogenTransportProblem):
     def initialise(self):
         self.define_meshtags_and_measures()
         self.create_submeshes()
+        for interface in self.interfaces:
+            interface.mt = self.facet_meshtags
+            interface.parent_mesh = self.mesh.mesh
         self.create_species_from_traps()
 
         self.t = fem.Constant(self.mesh.mesh, 0.0)
