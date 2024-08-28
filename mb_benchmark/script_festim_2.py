@@ -12,8 +12,6 @@ import dolfinx
 
 # dolfinx.log.set_log_level(dolfinx.log.LogLevel.INFO)
 
-from create_mesh import two_cubes, convert_mesh
-
 
 def run_festim_2(volume_file, facet_file):
 
@@ -95,14 +93,15 @@ def run_festim_2(volume_file, facet_file):
     my_model.settings = F.Settings(atol=None, rtol=None, final_time=10)
     my_model.settings.stepsize = F.Stepsize(1)
 
-    my_model.exports = [
+    mobile_exports = [
         F.VTXExport(
             f"results_festim_2/mobile_{subdomain.id}.bp",
             field=mobile,
             subdomain=subdomain,
         )
         for subdomain in my_model.volume_subdomains
-    ] + [
+    ]
+    trapped_exports = [
         F.VTXExport(
             f"results_festim_2/trapped_{vol1.id}a.bp",
             field=trapped_1a,
@@ -120,6 +119,7 @@ def run_festim_2(volume_file, facet_file):
         ),
     ]
 
+    my_model.exports = mobile_exports  # + trapped_exports
     my_model.initialise()
     my_model.run()
 
@@ -130,15 +130,18 @@ def run_festim_2(volume_file, facet_file):
 if __name__ == "__main__":
     times = []
     sizes = [0.05]  # , 0.05, 0.025]
+    nb_cells = []
     for size in sizes:
         if MPI.COMM_WORLD.rank == 0:
             print(f"Running for size {size}")
         volume_file = f"mesh/size_{size}/mesh.xdmf"
         facet_file = f"mesh/size_{size}/mf.xdmf"
         start_time = time.time()
-        nb_cells = run_festim_2(volume_file=volume_file, facet_file=facet_file)
+        N = run_festim_2(volume_file=volume_file, facet_file=facet_file)
+        nb_cells.append(N)
         end_time = time.time()
         ellapsed_time = end_time - start_time
         times.append(ellapsed_time)
     print(sizes)
     print(times)
+    print(nb_cells)

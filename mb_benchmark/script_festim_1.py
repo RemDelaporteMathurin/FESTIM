@@ -72,15 +72,18 @@ def run_festim_1(volume_file, facet_file):
 
 if __name__ == "__main__":
     times = []
-    sizes = [0.025]  # , 0.05, 0.025]
+    sizes = [0.05]  # , 0.05, 0.025]
+    nb_cells = []
     for size in sizes:
         print(f"Running for size {size}")
         volume_file = f"mesh/size_{size}/mesh.xdmf"
         facet_file = f"mesh/size_{size}/mf.xdmf"
         start_time = time.time()
-        nb_cells = run_festim_1(volume_file=volume_file, facet_file=facet_file)
+        N = run_festim_1(volume_file=volume_file, facet_file=facet_file)
+        nb_cells.append(N)
         end_time = time.time()
         ellapsed_time = end_time - start_time
         times.append(ellapsed_time)
     print(sizes)
     print(times)
+    print(nb_cells)
