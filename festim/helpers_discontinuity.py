@@ -106,7 +106,7 @@ class NewtonSolver:
             # Compute norm of update
 
             correction_norm = self.dx.norm(0)
-            print(f"Iteration {i}: Correction norm {correction_norm}")
+            print(f"Iteration {i}: Correction norm {correction_norm}, KSP iterations {self._solver.its}")
             if correction_norm < tol:
                 break
             i += 1
