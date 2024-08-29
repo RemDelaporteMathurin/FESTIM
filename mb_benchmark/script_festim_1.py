@@ -71,9 +71,18 @@ def run_festim_1(volume_file, facet_file):
 
 
 if __name__ == "__main__":
+    import pandas as pd
+    from mpi4py import MPI
+    # Get the number of processes
+    comm = MPI.COMM_WORLD
+    num_procs = comm.Get_size()
+    rank = comm.Get_rank()
+    if rank == 0:
+        print(f"Number of processes: {num_procs}")
     times = []
-    sizes = [0.05]  # , 0.05, 0.025]
+    sizes = [0.1, 0.07, 0.05, 0.04]
     nb_cells = []
+    ranks = []
     for size in sizes:
         print(f"Running for size {size}")
         volume_file = f"mesh/size_{size}/mesh.xdmf"
@@ -84,6 +93,26 @@ if __name__ == "__main__":
         end_time = time.time()
         ellapsed_time = end_time - start_time
         times.append(ellapsed_time)
+        ranks.append(rank)
     print(sizes)
     print(times)
     print(nb_cells)
+
+    # Gather data from all processes
+    all_sizes = comm.gather(sizes, root=0)
+    all_nb_cells = comm.gather(nb_cells, root=0)
+    all_times = comm.gather(times, root=0)
+    all_ranks = comm.gather(ranks, root=0)
+
+    
+    if rank == 0:
+        # Flatten the lists
+        all_ranks = [item for sublist in all_ranks for item in sublist]
+        all_sizes = [item for sublist in all_sizes for item in sublist]
+        all_nb_cells = [item for sublist in all_nb_cells for item in sublist]
+        all_times = [item for sublist in all_times for item in sublist]
+
+        # Create a DataFrame and save to CSV
+        df = pd.DataFrame({"rank": all_ranks, "size": all_sizes, "nb_cells": all_nb_cells, "time": all_times})
+        df.to_csv(f"festim_1_results_nprocs_{num_procs}.csv", index=False)
+        print(df)
