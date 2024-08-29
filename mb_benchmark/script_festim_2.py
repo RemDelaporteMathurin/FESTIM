@@ -89,7 +89,7 @@ def run_festim_2(volume_file, facet_file):
         surface2: vol2,
     }
 
-    my_model.settings = F.Settings(atol=None, rtol=None, final_time=10)
+    my_model.settings = F.Settings(atol=None, rtol=1e-5, final_time=10)
     my_model.settings.stepsize = F.Stepsize(1)
 
     mobile_exports = [
@@ -118,7 +118,7 @@ def run_festim_2(volume_file, facet_file):
         ),
     ]
 
-    my_model.exports = mobile_exports + trapped_exports
+    # my_model.exports = mobile_exports + trapped_exports
     my_model.initialise()
     my_model.run()
 
