@@ -732,6 +732,7 @@ class HTransportProblemDiscontinuous(HydrogenTransportProblem):
         traps=None,
         interfaces=None,
         surface_to_volume=None,
+        petsc_options=None,
     ):
         super().__init__(
             mesh,
@@ -748,6 +749,12 @@ class HTransportProblemDiscontinuous(HydrogenTransportProblem):
         )
         self.interfaces = interfaces or {}
         self.surface_to_volume = surface_to_volume or {}
+        default_petsc_options = {
+            "ksp_type": "preonly",
+            "pc_type": "lu",
+            "pc_factor_mat_solver_type": "mumps",
+        }
+        self.petsc_options = petsc_options or default_petsc_options
 
     def initialise(self):
         self.define_meshtags_and_measures()
@@ -950,12 +957,11 @@ class HTransportProblemDiscontinuous(HydrogenTransportProblem):
         n = ufl.FacetNormal(mesh)
         cr = ufl.Circumradius(mesh)
 
-        gamma = 10.0
-
         entity_maps = {
             sd.submesh: sd.parent_to_submesh for sd in self.volume_subdomains
         }
         for interface in self.interfaces:
+            gamma = interface.penalty_term
 
             subdomain_1, subdomain_2 = interface.subdomains
             b_res, t_res = interface.restriction
@@ -1037,11 +1043,7 @@ class HTransportProblemDiscontinuous(HydrogenTransportProblem):
             [subdomain.u for subdomain in self.volume_subdomains],
             bcs=self.bc_forms,
             max_iterations=10,
-            petsc_options={
-                "ksp_type": "preonly",
-                "pc_type": "lu",
-                "pc_factor_mat_solver_type": "mumps",
-            },
+            petsc_options=self.petsc_options,
         )
 
     def create_flux_values_fenics(self):
@@ -1097,7 +1099,7 @@ class HTransportProblemDiscontinuous(HydrogenTransportProblem):
         self.update_time_dependent_values()
 
         # solve main problem
-        nb_its = self.solver.solve(1e-5)
+        nb_its = self.solver.solve(self.settings.rtol)
 
         # post processing
         self.post_processing()
@@ -1128,5 +1130,5 @@ class HTransportProblemDiscontinuous(HydrogenTransportProblem):
                 self.progress_bar.refresh()  # refresh progress bar to show 100%
         else:
             # Solve steady-state
-            nb_iterations = self.solver.solve(1e-5)
+            nb_iterations = self.solver.solve(self.settings.rtol)
             self.post_processing()
