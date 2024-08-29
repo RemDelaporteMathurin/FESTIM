@@ -16,7 +16,7 @@ import dolfinx
 def run_festim_2(volume_file, facet_file):
 
     my_model = F.HTransportProblemDiscontinuous()
-    my_model.progress_bar = False
+    my_model.show_progress_bar = False
     my_model.mesh = F.MeshFromXDMF(
         volume_file=volume_file,
         facet_file=facet_file,
@@ -31,9 +31,7 @@ def run_festim_2(volume_file, facet_file):
     vol2 = F.VolumeSubdomain(id=2, material=copper)
     surface1 = F.SurfaceSubdomain(id=3)
 
-    interface1 = F.Interface(
-        id=4, subdomains=[vol1, vol2]
-    )
+    interface1 = F.Interface(id=4, subdomains=[vol1, vol2])
 
     surface2 = F.SurfaceSubdomain(id=5)
 
@@ -120,7 +118,7 @@ def run_festim_2(volume_file, facet_file):
         ),
     ]
 
-    my_model.exports = mobile_exports  + trapped_exports
+    my_model.exports = mobile_exports + trapped_exports
     my_model.initialise()
     my_model.run()
 
@@ -130,6 +128,7 @@ def run_festim_2(volume_file, facet_file):
 
 if __name__ == "__main__":
     import pandas as pd
+
     # Get the number of processes
     comm = MPI.COMM_WORLD
     num_procs = comm.Get_size()
@@ -162,7 +161,6 @@ if __name__ == "__main__":
     all_times = comm.gather(times, root=0)
     all_ranks = comm.gather(ranks, root=0)
 
-    
     if rank == 0:
         # Flatten the lists
         all_ranks = [item for sublist in all_ranks for item in sublist]
@@ -171,6 +169,13 @@ if __name__ == "__main__":
         all_times = [item for sublist in all_times for item in sublist]
 
         # Create a DataFrame and save to CSV
-        df = pd.DataFrame({"rank": all_ranks, "size": all_sizes, "nb_cells": all_nb_cells, "time": all_times})
+        df = pd.DataFrame(
+            {
+                "rank": all_ranks,
+                "size": all_sizes,
+                "nb_cells": all_nb_cells,
+                "time": all_times,
+            }
+        )
         df.to_csv(f"festim_2_results_nprocs_{num_procs}.csv", index=False)
         print(df)
