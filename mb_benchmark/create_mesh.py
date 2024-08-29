@@ -261,7 +261,7 @@ def convert_mesh(filename, volume_file="mesh/mesh.xdmf", boundary_file="mesh/mf.
 
 
 if __name__ == "__main__":
-    for size in [0.1, 0.07, 0.05, 0.025]:
+    for size in [0.1, 0.07, 0.05, 0.04]:
         two_cubes(f"mesh/size_{size}/mesh.msh", size=size)
         volume_file = f"mesh/size_{size}/mesh.xdmf"
         facet_file = f"mesh/size_{size}/mf.xdmf"
