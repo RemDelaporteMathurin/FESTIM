@@ -21,7 +21,6 @@ def run_festim_2(volume_file, facet_file):
         volume_file=volume_file,
         facet_file=facet_file,
     )
-    mt = my_model.mesh.define_surface_meshtags()
 
     tungsten = F.Material(D_0=1, E_D=0, K_S_0=1, E_K_S=0)
 
@@ -31,7 +30,7 @@ def run_festim_2(volume_file, facet_file):
     vol2 = F.VolumeSubdomain(id=2, material=copper)
     surface1 = F.SurfaceSubdomain(id=3)
 
-    interface1 = F.Interface(id=4, subdomains=[vol1, vol2])
+    interface1 = F.Interface(id=4, subdomains=[vol1, vol2], penalty_term=10.0)
 
     surface2 = F.SurfaceSubdomain(id=5)
 
@@ -118,7 +117,7 @@ def run_festim_2(volume_file, facet_file):
         ),
     ]
 
-    # my_model.exports = mobile_exports + trapped_exports
+    my_model.exports = mobile_exports + trapped_exports
     my_model.initialise()
     my_model.run()
 
