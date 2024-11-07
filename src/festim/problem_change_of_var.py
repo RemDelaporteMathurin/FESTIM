@@ -36,6 +36,11 @@ class HydrogenTransportProblemDiscontinuousChangeVar(HydrogenTransportProblem):
         self.override_post_processing_solution()  # NOTE this is the only difference with parent class
         self.initialise_exports()
 
+        # ensure the initial guess is non-zero
+        for spe in self.species:
+            if spe.mobile:
+                spe.solution.x.array[:] = 1e-16
+
     def create_formulation(self):
         """Creates the formulation of the model"""
 
@@ -55,8 +60,17 @@ class HydrogenTransportProblemDiscontinuousChangeVar(HydrogenTransportProblem):
                     K_S = vol.material.get_solubility_coefficient(
                         self.mesh.mesh, self.temperature_fenics, spe
                     )
-                    c = u * K_S
-                    c_n = u_n * K_S
+                    K_S_n = vol.material.get_solubility_coefficient(
+                        self.mesh.mesh,
+                        self.temperature_fenics,
+                        spe,  # FIXME this should be using the previous temperature fenics
+                    )
+                    if vol.material.law == "sieverts":
+                        c = u * K_S
+                        c_n = u_n * K_S_n
+                    elif vol.material.law == "henry":
+                        c = u**2 * K_S
+                        c_n = u_n**2 * K_S_n
                 else:
                     c = u
                     c_n = u_n
@@ -81,7 +95,10 @@ class HydrogenTransportProblemDiscontinuousChangeVar(HydrogenTransportProblem):
                     K_S = reaction.volume.material.get_solubility_coefficient(
                         self.mesh.mesh, self.temperature_fenics, spe
                     )
-                    spe.concentration = spe.solution * K_S
+                    if reaction.volume.material.law == "sieverts":
+                        spe.concentration = spe.solution * K_S
+                    elif reaction.volume.material.law == "henry":
+                        spe.concentration = spe.solution**2 * K_S
 
             # reactant
             for reactant in reaction.reactant:
@@ -139,7 +156,7 @@ class HydrogenTransportProblemDiscontinuousChangeVar(HydrogenTransportProblem):
                         )
 
     def override_post_processing_solution(self):
-        # override the post-processing solution c = theta * K_S
+        # override the post-processing solution c = theta **2 * K_S if henry, c = theta * K_S if sieverts
         Q0 = fem.functionspace(self.mesh.mesh, ("DG", 0))
         Q1 = fem.functionspace(self.mesh.mesh, ("DG", 1))
 
@@ -148,18 +165,27 @@ class HydrogenTransportProblemDiscontinuousChangeVar(HydrogenTransportProblem):
                 continue
             K_S0 = fem.Function(Q0)
             E_KS = fem.Function(Q0)
+
+            henry_marker = fem.Function(Q0)  # 1 where henry law, 0 if sieverts
+
             for subdomain in self.volume_subdomains:
                 entities = subdomain.locate_subdomain_entities_correct(
                     self.volume_meshtags
                 )
                 K_S0.x.array[entities] = subdomain.material.get_K_S_0(spe)
                 E_KS.x.array[entities] = subdomain.material.get_E_K_S(spe)
+                henry_marker.x.array[entities] = (
+                    1 if subdomain.material.law == "henry" else 0
+                )
 
             K_S = K_S0 * ufl.exp(-E_KS / (festim.k_B * self.temperature_fenics))
 
             theta = spe.solution
 
-            spe.dg_expr = fem.Expression(theta * K_S, Q1.element.interpolation_points())
+            spe.dg_expr = fem.Expression(
+                theta**2 * K_S * henry_marker + theta * K_S * (1 - henry_marker),
+                Q1.element.interpolation_points(),
+            )
             spe.post_processing_solution = fem.Function(Q1)
             spe.post_processing_solution.interpolate(
                 spe.dg_expr
@@ -195,11 +221,15 @@ class HydrogenTransportProblemDiscontinuousChangeVar(HydrogenTransportProblem):
         Q0 = fem.functionspace(self.mesh.mesh, ("DG", 0))
         K_S0 = fem.Function(Q0)
         E_KS = fem.Function(Q0)
+        henry_marker = fem.Function(Q0)  # 1 where henry law, 0 if sieverts
+
         for subdomain in self.volume_subdomains:
             entities = subdomain.locate_subdomain_entities_correct(self.volume_meshtags)
             K_S0.x.array[entities] = subdomain.material.get_K_S_0(bc.species)
             E_KS.x.array[entities] = subdomain.material.get_E_K_S(bc.species)
-
+            henry_marker.x.array[entities] = (
+                1 if subdomain.material.law == "henry" else 0
+            )
         K_S = K_S0 * ufl.exp(-E_KS / (festim.k_B * self.temperature_fenics))
 
         bc.create_value(
@@ -207,6 +237,7 @@ class HydrogenTransportProblemDiscontinuousChangeVar(HydrogenTransportProblem):
             function_space=function_space_value,
             t=self.t,
             K_S=K_S,
+            henry_marker=henry_marker,
         )
 
         # get dofs

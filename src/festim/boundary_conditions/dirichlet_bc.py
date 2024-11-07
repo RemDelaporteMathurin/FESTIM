@@ -197,6 +197,7 @@ class FixedConcentrationBC(DirichletBCBase):
         temperature: float | fem.Constant,
         t: float | fem.Constant,
         K_S: fem.Function = None,
+        henry_marker: fem.Function = None,
     ):
         """Creates the value of the boundary condition as a fenics object and sets it to
         self.value_fenics.
@@ -249,12 +250,14 @@ class FixedConcentrationBC(DirichletBCBase):
                 )
                 self.value_fenics.interpolate(self.bc_expr)
 
-        # if K_S is provided, divide the value by K_S (change of variable method)
+        # if K_S is provided (change of variable method)
         if K_S is not None:
+            assert henry_marker is not None, "henry_marker should be provided"
             if isinstance(self.value, (int, float)):
                 val_as_cst = helpers.as_fenics_constant(mesh=mesh, value=self.value)
                 self.bc_expr = fem.Expression(
-                    val_as_cst / K_S,
+                    (val_as_cst / K_S) ** 0.5 * henry_marker
+                    + val_as_cst / K_S * (1 - henry_marker),
                     function_space.element.interpolation_points(),
                 )
                 self.value_fenics = fem.Function(function_space)
@@ -274,7 +277,8 @@ class FixedConcentrationBC(DirichletBCBase):
                         )
 
                     self.bc_expr = fem.Expression(
-                        self.value(t=t) / K_S,
+                        (self.value(t=t) / K_S) ** 0.5 * henry_marker
+                        + self.value(t=t) / K_S * (1 - henry_marker),
                         function_space.element.interpolation_points(),
                     )
                     self.value_fenics = fem.Function(function_space)
@@ -292,7 +296,8 @@ class FixedConcentrationBC(DirichletBCBase):
                     # store the expression of the boundary condition
                     # to update the value_fenics later
                     self.bc_expr = fem.Expression(
-                        self.value(**kwargs) / K_S,
+                        (self.value(**kwargs) / K_S) ** 0.5 * henry_marker
+                        + self.value(**kwargs) / K_S * (1 - henry_marker),
                         function_space.element.interpolation_points(),
                     )
                     self.value_fenics.interpolate(self.bc_expr)
