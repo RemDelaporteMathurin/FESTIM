@@ -1,6 +1,7 @@
 import festim as F
 import numpy as np
 import matplotlib.pyplot as plt
+import h_transport_materials as htm
 
 import dolfinx.fem as fem
 import ufl
@@ -29,11 +30,25 @@ upstream_h2_pressure = 0.063  # Pa
 upstream_d2_pressure = 0.1  # Pa
 temperature = 870  # K
 
-import h_transport_materials as htm
 
 pd_recomb_coeff = htm.recombination_coeffs.filter(material=htm.PALLADIUM).mean()
 pd_diss_coeff = htm.dissociation_coeffs.filter(material=htm.PalladiumAlloy).mean()
 pd_diffusion_coeff = htm.diffusivities.filter(material=htm.PALLADIUM).mean()
+
+k_r_hh = pd_recomb_coeff.pre_exp.magnitude
+E_k_r_hh = pd_recomb_coeff.act_energy.magnitude
+k_d_hh = pd_diss_coeff.pre_exp.magnitude * 1.23
+E_k_d_hh = pd_diss_coeff.act_energy.magnitude
+
+k_r_dd = pd_recomb_coeff.pre_exp.magnitude / 1.23 / 2
+E_k_r_dd = pd_recomb_coeff.act_energy.magnitude
+k_d_dd = pd_diss_coeff.pre_exp.magnitude
+E_k_d_dd = pd_diss_coeff.act_energy.magnitude
+
+k_r_hd = pd_recomb_coeff.pre_exp.magnitude
+E_k_r_hd = pd_recomb_coeff.act_energy.magnitude
+k_d_hd = pd_diss_coeff.pre_exp.magnitude
+E_k_d_hd = pd_diss_coeff.act_energy.magnitude
 
 my_model = F.HydrogenTransportProblem()
 my_model.mesh = F.Mesh1D(vertices=np.linspace(0, pd_thickness, 300))
@@ -57,39 +72,39 @@ my_model.temperature = temperature
 surface_reaction_hh_left = F.SurfaceReactionBC(
     reactant=[H, H],
     gas_pressure=upstream_h2_pressure,
-    k_r0=pd_recomb_coeff.pre_exp.magnitude,
-    E_kr=pd_recomb_coeff.act_energy.magnitude,
-    k_d0=pd_diss_coeff.pre_exp.magnitude * 1.23,
-    E_kd=pd_diss_coeff.act_energy.magnitude,
+    k_r0=k_r_hh,
+    E_kr=E_k_r_hh,
+    k_d0=k_d_hh,
+    E_kd=E_k_d_hh,
     subdomain=left,
 )
 
 surface_reaction_dd_left = F.SurfaceReactionBC(
     reactant=[D, D],
     gas_pressure=upstream_d2_pressure,
-    k_r0=pd_recomb_coeff.pre_exp.magnitude / 1.23 / 2,
-    E_kr=pd_recomb_coeff.act_energy.magnitude,
-    k_d0=pd_diss_coeff.pre_exp.magnitude,
-    E_kd=pd_diss_coeff.act_energy.magnitude,
+    k_r0=k_r_dd,
+    E_kr=E_k_r_dd,
+    k_d0=k_d_dd,
+    E_kd=E_k_d_dd,
     subdomain=left,
 )
 
 surface_reaction_hd_right = F.SurfaceReactionBC(
     reactant=[H, D],
     gas_pressure=0,
-    k_r0=pd_recomb_coeff.pre_exp.magnitude,
-    E_kr=pd_recomb_coeff.act_energy.magnitude,
-    k_d0=pd_diss_coeff.pre_exp.magnitude,
-    E_kd=pd_diss_coeff.act_energy.magnitude,
+    k_r0=k_r_hd,
+    E_kr=E_k_r_hd,
+    k_d0=k_d_hd,
+    E_kd=E_k_d_hd,
     subdomain=right,
 )
 
 surface_reaction_hh_right = F.SurfaceReactionBC(
     reactant=[H, H],
     gas_pressure=0,
-    k_r0=pd_recomb_coeff.pre_exp.magnitude,
-    E_kr=pd_recomb_coeff.act_energy.magnitude,
-    k_d0=pd_diss_coeff.pre_exp.magnitude,
+    k_r0=k_r_hh,
+    E_kr=E_k_r_hh,
+    k_d0=k_d_hh,
     E_kd=pd_diss_coeff.act_energy.magnitude,
     subdomain=right,
 )
@@ -97,10 +112,10 @@ surface_reaction_hh_right = F.SurfaceReactionBC(
 surface_reaction_dd_right = F.SurfaceReactionBC(
     reactant=[D, D],
     gas_pressure=0,
-    k_r0=pd_recomb_coeff.pre_exp.magnitude / 1.23 / 2,
-    E_kr=pd_recomb_coeff.act_energy.magnitude,
-    k_d0=pd_diss_coeff.pre_exp.magnitude,
-    E_kd=pd_diss_coeff.act_energy.magnitude,
+    k_r0=k_r_dd,
+    E_kr=E_k_r_dd,
+    k_d0=k_d_dd,
+    E_kd=E_k_d_dd,
     subdomain=right,
 )
 
