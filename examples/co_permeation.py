@@ -35,23 +35,23 @@ pd_recomb_coeff = htm.recombination_coeffs.filter(material=htm.PALLADIUM).mean()
 pd_diss_coeff = htm.dissociation_coeffs.filter(material=htm.PalladiumAlloy).mean()
 pd_diffusion_coeff = htm.diffusivities.filter(material=htm.PALLADIUM).mean()
 
-k_r_hh = pd_recomb_coeff.pre_exp.magnitude
+k_r_hh = pd_recomb_coeff.pre_exp.magnitude * 2
 E_k_r_hh = pd_recomb_coeff.act_energy.magnitude
-k_d_hh = pd_diss_coeff.pre_exp.magnitude * 1.23
+k_d_hh = pd_diss_coeff.pre_exp.magnitude * 2
 E_k_d_hh = pd_diss_coeff.act_energy.magnitude
 
-k_r_dd = pd_recomb_coeff.pre_exp.magnitude * 0.41
+k_r_dd = pd_recomb_coeff.pre_exp.magnitude * 1.2
 E_k_r_dd = pd_recomb_coeff.act_energy.magnitude
-k_d_dd = pd_diss_coeff.pre_exp.magnitude
+k_d_dd = pd_diss_coeff.pre_exp.magnitude * 1.2
 E_k_d_dd = pd_diss_coeff.act_energy.magnitude
 
-k_r_hd = pd_recomb_coeff.pre_exp.magnitude
+k_r_hd = pd_recomb_coeff.pre_exp.magnitude * 2
 E_k_r_hd = pd_recomb_coeff.act_energy.magnitude
-k_d_hd = pd_diss_coeff.pre_exp.magnitude
+k_d_hd = pd_diss_coeff.pre_exp.magnitude * 2
 E_k_d_hd = pd_diss_coeff.act_energy.magnitude
 
 my_model = F.HydrogenTransportProblem()
-my_model.mesh = F.Mesh1D(vertices=np.linspace(0, pd_thickness, 300))
+my_model.mesh = F.Mesh1D(vertices=np.linspace(0, pd_thickness, 100))
 my_mat = F.Material(
     name="Pd",
     D_0=pd_diffusion_coeff.pre_exp.magnitude,
@@ -68,6 +68,17 @@ D = F.Species("D")
 my_model.species = [H, D]
 
 my_model.temperature = temperature
+
+
+surface_reaction_hd_left = F.SurfaceReactionBC(
+    reactant=[H, D],
+    gas_pressure=0,
+    k_r0=k_r_hd,
+    E_kr=E_k_r_hd,
+    k_d0=k_d_hd,
+    E_kd=E_k_d_hd,
+    subdomain=left,
+)
 
 surface_reaction_hh_left = F.SurfaceReactionBC(
     reactant=[H, H],
@@ -120,6 +131,7 @@ surface_reaction_dd_right = F.SurfaceReactionBC(
 )
 
 my_model.boundary_conditions = [
+    surface_reaction_hd_left,
     surface_reaction_hh_left,
     surface_reaction_dd_left,
     surface_reaction_hd_right,
