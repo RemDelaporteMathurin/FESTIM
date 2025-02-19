@@ -54,13 +54,12 @@ my_model.species = [H, D]
 
 my_model.temperature = temperature
 
-
 surface_reaction_hh_left = F.SurfaceReactionBC(
     reactant=[H, H],
     gas_pressure=upstream_h2_pressure,
     k_r0=pd_recomb_coeff.pre_exp.magnitude,
     E_kr=pd_recomb_coeff.act_energy.magnitude,
-    k_d0=pd_diss_coeff.pre_exp.magnitude,
+    k_d0=pd_diss_coeff.pre_exp.magnitude * 1.23,
     E_kd=pd_diss_coeff.act_energy.magnitude,
     subdomain=left,
 )
@@ -68,9 +67,9 @@ surface_reaction_hh_left = F.SurfaceReactionBC(
 surface_reaction_dd_left = F.SurfaceReactionBC(
     reactant=[D, D],
     gas_pressure=upstream_d2_pressure,
-    k_r0=pd_recomb_coeff.pre_exp.magnitude / 1.63,
+    k_r0=pd_recomb_coeff.pre_exp.magnitude / 1.23 / 2,
     E_kr=pd_recomb_coeff.act_energy.magnitude,
-    k_d0=pd_diss_coeff.pre_exp.magnitude / 1.63,
+    k_d0=pd_diss_coeff.pre_exp.magnitude,
     E_kd=pd_diss_coeff.act_energy.magnitude,
     subdomain=left,
 )
@@ -78,9 +77,9 @@ surface_reaction_dd_left = F.SurfaceReactionBC(
 surface_reaction_hd_right = F.SurfaceReactionBC(
     reactant=[H, D],
     gas_pressure=0,
-    k_r0=pd_recomb_coeff.pre_exp.magnitude / 1.63,
+    k_r0=pd_recomb_coeff.pre_exp.magnitude,
     E_kr=pd_recomb_coeff.act_energy.magnitude,
-    k_d0=pd_diss_coeff.pre_exp.magnitude / 1.63,
+    k_d0=pd_diss_coeff.pre_exp.magnitude,
     E_kd=pd_diss_coeff.act_energy.magnitude,
     subdomain=right,
 )
@@ -98,9 +97,9 @@ surface_reaction_hh_right = F.SurfaceReactionBC(
 surface_reaction_dd_right = F.SurfaceReactionBC(
     reactant=[D, D],
     gas_pressure=0,
-    k_r0=pd_recomb_coeff.pre_exp.magnitude / 1.63,
+    k_r0=pd_recomb_coeff.pre_exp.magnitude / 1.23 / 2,
     E_kr=pd_recomb_coeff.act_energy.magnitude,
-    k_d0=pd_diss_coeff.pre_exp.magnitude / 1.63,
+    k_d0=pd_diss_coeff.pre_exp.magnitude,
     E_kd=pd_diss_coeff.act_energy.magnitude,
     subdomain=right,
 )
