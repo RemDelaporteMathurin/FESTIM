@@ -40,7 +40,7 @@ E_k_r_hh = pd_recomb_coeff.act_energy.magnitude
 k_d_hh = pd_diss_coeff.pre_exp.magnitude * 1.23
 E_k_d_hh = pd_diss_coeff.act_energy.magnitude
 
-k_r_dd = pd_recomb_coeff.pre_exp.magnitude / 1.23 / 2
+k_r_dd = pd_recomb_coeff.pre_exp.magnitude * 0.41
 E_k_r_dd = pd_recomb_coeff.act_energy.magnitude
 k_d_dd = pd_diss_coeff.pre_exp.magnitude
 E_k_d_dd = pd_diss_coeff.act_energy.magnitude
@@ -105,7 +105,7 @@ surface_reaction_hh_right = F.SurfaceReactionBC(
     k_r0=k_r_hh,
     E_kr=E_k_r_hh,
     k_d0=k_d_hh,
-    E_kd=pd_diss_coeff.act_energy.magnitude,
+    E_kd=E_k_d_hh,
     subdomain=right,
 )
 
