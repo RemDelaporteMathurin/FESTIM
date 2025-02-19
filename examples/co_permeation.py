@@ -8,6 +8,7 @@ from dolfinx.log import set_log_level, LogLevel
 
 # set_log_level(LogLevel.INFO)
 
+
 class FluxFromSurfaceReaction(F.SurfaceFlux):
     def __init__(self, reaction: F.SurfaceReactionBC):
         super().__init__(
@@ -35,7 +36,7 @@ pd_diss_coeff = htm.dissociation_coeffs.filter(material=htm.PalladiumAlloy).mean
 pd_diffusion_coeff = htm.diffusivities.filter(material=htm.PALLADIUM).mean()
 
 my_model = F.HydrogenTransportProblem()
-my_model.mesh = F.Mesh1D(vertices=np.linspace(0, pd_thickness, 1000))
+my_model.mesh = F.Mesh1D(vertices=np.linspace(0, pd_thickness, 300))
 my_mat = F.Material(
     name="Pd",
     D_0=pd_diffusion_coeff.pre_exp.magnitude,
@@ -67,9 +68,9 @@ surface_reaction_hh_left = F.SurfaceReactionBC(
 surface_reaction_dd_left = F.SurfaceReactionBC(
     reactant=[D, D],
     gas_pressure=upstream_d2_pressure,
-    k_r0=pd_recomb_coeff.pre_exp.magnitude,
+    k_r0=pd_recomb_coeff.pre_exp.magnitude / 1.63,
     E_kr=pd_recomb_coeff.act_energy.magnitude,
-    k_d0=pd_diss_coeff.pre_exp.magnitude,
+    k_d0=pd_diss_coeff.pre_exp.magnitude / 1.63,
     E_kd=pd_diss_coeff.act_energy.magnitude,
     subdomain=left,
 )
@@ -77,9 +78,9 @@ surface_reaction_dd_left = F.SurfaceReactionBC(
 surface_reaction_hd_right = F.SurfaceReactionBC(
     reactant=[H, D],
     gas_pressure=0,
-    k_r0=pd_recomb_coeff.pre_exp.magnitude,
+    k_r0=pd_recomb_coeff.pre_exp.magnitude / 1.63,
     E_kr=pd_recomb_coeff.act_energy.magnitude,
-    k_d0=pd_diss_coeff.pre_exp.magnitude,
+    k_d0=pd_diss_coeff.pre_exp.magnitude / 1.63,
     E_kd=pd_diss_coeff.act_energy.magnitude,
     subdomain=right,
 )
@@ -97,9 +98,9 @@ surface_reaction_hh_right = F.SurfaceReactionBC(
 surface_reaction_dd_right = F.SurfaceReactionBC(
     reactant=[D, D],
     gas_pressure=0,
-    k_r0=pd_recomb_coeff.pre_exp.magnitude,
+    k_r0=pd_recomb_coeff.pre_exp.magnitude / 1.63,
     E_kr=pd_recomb_coeff.act_energy.magnitude,
-    k_d0=pd_diss_coeff.pre_exp.magnitude,
+    k_d0=pd_diss_coeff.pre_exp.magnitude / 1.63,
     E_kd=pd_diss_coeff.act_energy.magnitude,
     subdomain=right,
 )
@@ -132,7 +133,7 @@ my_model.exports = [
 ]
 
 
-my_model.settings = F.Settings(atol=1e11, rtol=1e-10, final_time=30, transient=True)
+my_model.settings = F.Settings(atol=1e11, rtol=1e-10, final_time=10, transient=True)
 
 my_model.settings.stepsize = 0.2
 
@@ -140,7 +141,7 @@ all_d_desorption_fluxes = []
 hh_desorption_fluxes = []
 hd_desorption_fluxes = []
 dd_desorption_fluxes = []
-upstream_d_pressures = np.logspace(-2, 0, num=5)
+upstream_d_pressures = np.geomspace(4e-3, 1, num=5)
 
 for upstream_d_pressure in upstream_d_pressures:
     for flux_bc in surface_reaction_dd_left.flux_bcs:
@@ -148,7 +149,6 @@ for upstream_d_pressure in upstream_d_pressures:
 
     my_model.initialise()
     my_model.run()
-
 
     # ------ Post processsing ------ #
 
@@ -158,17 +158,36 @@ for upstream_d_pressure in upstream_d_pressures:
         export.data = np.array(export.data) / avogadro
 
     all_d_desorption_fluxes.append(np.abs(D_flux_right.data)[-1])
-    print(f"Desorption flux at {upstream_d_pressure} Pa: {all_d_desorption_fluxes[-1]} mol/m^2/s")
+    print(
+        f"Desorption flux at {upstream_d_pressure} Pa: {all_d_desorption_fluxes[-1]} mol/m^2/s"
+    )
 
     hh_desorption_fluxes.append(np.abs(HH_flux.data)[-1])
     hd_desorption_fluxes.append(np.abs(HD_flux.data)[-1])
     dd_desorption_fluxes.append(np.abs(DD_flux.data)[-1])
 
 
-# plt.plot(upstream_d_pressures, all_d_desorption_fluxes, marker="o")
-plt.plot(upstream_d_pressures, hh_desorption_fluxes, marker="o", label="HH")
-plt.plot(upstream_d_pressures, hd_desorption_fluxes, marker="o", label="HD")
-plt.plot(upstream_d_pressures, dd_desorption_fluxes, marker="o", label="DD")
+import pandas as pd
+
+# read experimental data
+exp_data = pd.read_csv(
+    "co_permeation_exp_data.csv",
+    names=["H2_X", "H2_Y", "D2_X", "D2_Y", "HD_X", "HD_Y"],
+    skiprows=2,
+)
+
+from pypalettes import load_cmap
+
+cmap = load_cmap("Acadia")
+
+plt.scatter(exp_data["H2_X"], exp_data["H2_Y"], marker="o", label="H2", color=cmap(0))
+plt.scatter(exp_data["D2_X"], exp_data["D2_Y"], marker="^", label="D2", color=cmap(1))
+plt.scatter(exp_data["HD_X"], exp_data["HD_Y"], marker="s", label="HD", color=cmap(2))
+
+plt.plot(upstream_d_pressures, hh_desorption_fluxes, label="HH", color=cmap(0))
+plt.plot(upstream_d_pressures, dd_desorption_fluxes, label="DD", color=cmap(1))
+plt.plot(upstream_d_pressures, hd_desorption_fluxes, label="HD", color=cmap(2))
+
 plt.xlabel("Upstream D pressure (Pa)")
 plt.ylabel("Desorption flux (mol/m^2/s)")
 plt.xscale("log")
