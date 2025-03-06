@@ -144,7 +144,21 @@ class BottomSurface(F.SurfaceSubdomain):
 
 
 my_model = F.HydrogenTransportProblem()
-my_model.mesh = F.Mesh(mesh=my_of_reader.dolfinx_mesh)
+
+new_mesh = dolfinx.mesh.create_box(
+    MPI.COMM_WORLD, [[0, 0, 0], [0.1, 0.1, 0.01]], n=[10, 10, 3]
+)
+
+
+# interpolate velocity on the new mesh
+element = basix.ufl.element("Lagrange", new_mesh.ufl_cell().cellname(), 1, shape=(3,))
+V = dolfinx.fem.functionspace(new_mesh, element)
+new_vel = dolfinx.fem.Function(V)
+F.helpers.nmm_interpolate(new_vel, vel)
+
+
+# my_model.mesh = F.Mesh(mesh=my_of_reader.dolfinx_mesh)
+my_model.mesh = F.Mesh(mesh=new_mesh)
 
 my_mat = F.Material(name="mat", D_0=0.1, E_D=0)
 vol = F.VolumeSubdomain(id=1, material=my_mat)
@@ -172,14 +186,8 @@ my_model.settings = F.Settings(
     atol=1e-10, rtol=1e-10, transient=True, stepsize=0.0001, final_time=0.03
 )
 
-
-def create_closest_velocity(t: float):
-    closest_time = find_closest_value(my_of_reader.reader.time_values, t)
-    return my_of_reader.create_dolfinx_function(t=closest_time)
-
-
 my_model.advection_terms = [
-    F.AdvectionTerm(velocity=50 * vel, subdomain=vol, species=[H]),
+    F.AdvectionTerm(velocity=50 * new_vel, subdomain=vol, species=[H]),
 ]
 
 
