@@ -93,6 +93,12 @@ def create_velocity_field():
 
 
 u = create_velocity_field()
+element = basix.ufl.element(
+    "Lagrange", mesh.ufl_cell().cellname(), 1, shape=(mesh.geometry.dim,)
+)
+V = dolfinx.fem.functionspace(mesh, element)
+u_new = dolfinx.fem.Function(V)
+F.helpers.nmm_interpolate(u_new, u)
 
 writer = dolfinx.io.VTXWriter(MPI.COMM_WORLD, "velocity.bp", u, engine="BP5")
 writer.write(t=0)
@@ -147,7 +153,7 @@ my_model.boundary_conditions = [
 ]
 
 my_model.advection_terms = [
-    F.AdvectionTerm(velocity=u, species=[H], subdomain=bottom_domain)
+    F.AdvectionTerm(velocity=u_new, species=[H], subdomain=bottom_domain)
 ]
 
 

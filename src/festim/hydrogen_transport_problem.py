@@ -1169,19 +1169,7 @@ class HTransportProblemDiscontinuous(HydrogenTransportProblem):
                 conc = spe.subdomain_to_solution[subdomain]
                 vel = adv_term.velocity
 
-                # since the meshes are different, we need to interpolate onto a new functionspace
-                submesh = subdomain.submesh
-                v_cg = basix.ufl.element(
-                    "Lagrange",
-                    submesh.topology.cell_name(),
-                    2,
-                    shape=(submesh.geometry.dim,),
-                )
-                V_velocity = dolfinx.fem.functionspace(submesh, v_cg)
-                vel_2 = dolfinx.fem.Function(V_velocity)
-                nmm_interpolate(vel_2, vel)
-
-                form += ufl.inner(ufl.dot(ufl.grad(conc), vel_2), v) * self.dx(
+                form += ufl.inner(ufl.dot(ufl.grad(conc), vel), v) * self.dx(
                     subdomain.id
                 )
 
