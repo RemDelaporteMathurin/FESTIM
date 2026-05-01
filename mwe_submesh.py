@@ -81,6 +81,7 @@ F += ufl.inner(ufl.grad(u_sub), ufl.grad(v_sub)) * ds(1)
 # we would expect that increasing vel_x would decrease u_sub at the outlet
 
 vel_x = 10
+# NOTE: has to be a 2D vector other wise dolfinx complains
 vel = dolfinx.fem.Constant(submesh, PETSc.ScalarType([vel_x, 0.0]))
 
 F += ufl.inner(ufl.dot(ufl.grad(u_sub), vel), v_sub) * ds(1)
