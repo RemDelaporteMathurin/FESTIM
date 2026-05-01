@@ -80,17 +80,25 @@ F += -flux * v_sub * ds(1)
 forms = ufl.extract_blocks(F)
 
 # Dirichlet BC left
-bc_top = dolfinx.fem.dirichletbc(
-    0.0,
+bc_top_dofs = dolfinx.fem.locate_dofs_topological(
+    V_bulk,
+    mesh.topology.dim - 1,
     dolfinx.mesh.locate_entities(
         mesh, mesh.topology.dim - 1, lambda x: np.isclose(x[1], 1)
     ),
+)
+bc_top = dolfinx.fem.dirichletbc(
+    dolfinx.default_scalar_type(0.0),
+    bc_top_dofs,
     V_bulk,
 )
 
+bc_left_dofs = dolfinx.fem.locate_dofs_topological(
+    V_sub, 0, dolfinx.mesh.locate_entities(submesh, 0, lambda x: np.isclose(x[0], 0))
+)
 bc_left = dolfinx.fem.dirichletbc(
-    1.0,
-    dolfinx.mesh.locate_entities(submesh, 0, lambda x: np.isclose(x[0], 0)),
+    dolfinx.default_scalar_type(1.0),
+    bc_left_dofs,
     V_sub,
 )
 # Nonlinear problem
