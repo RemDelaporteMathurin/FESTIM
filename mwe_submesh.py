@@ -4,11 +4,12 @@ import dolfinx
 import dolfinx.fem.petsc
 import numpy as np
 import ufl
+from petsc4py import PETSc
 
 mesh = dolfinx.mesh.create_rectangle(
     MPI.COMM_WORLD,
     [np.array([0, 0]), np.array([10, 1])],
-    [10, 10],
+    [50, 10],
     cell_type=dolfinx.mesh.CellType.quadrilateral,
 )
 vdim = mesh.topology.dim
@@ -52,6 +53,7 @@ with dolfinx.io.XDMFFile(mesh.comm, "results/cell_tags.xdmf", "w") as xdmf:
 submesh, cmap, vmap, nmap = dolfinx.mesh.create_submesh(
     mesh, dim=fdim, entities=facet_tags.find(1)
 )
+submesh.topology.create_connectivity(0, 1)
 
 # Function spaces and functions
 V_bulk = dolfinx.fem.functionspace(mesh, ("CG", 1))
@@ -60,7 +62,9 @@ V_sub = dolfinx.fem.functionspace(submesh, ("CG", 1))
 W = ufl.MixedFunctionSpace(V_bulk, V_sub)
 
 u = dolfinx.fem.Function(V_bulk)
+u.name = "u"
 u_sub = dolfinx.fem.Function(V_sub)
+u_sub.name = "u_sub"
 
 v, v_sub = ufl.TestFunctions(W)
 
@@ -68,17 +72,29 @@ v, v_sub = ufl.TestFunctions(W)
 dx = ufl.dx(domain=mesh, subdomain_data=cell_tags)
 ds = ufl.ds(domain=mesh, subdomain_data=facet_tags)
 
-F = ufl.inner(ufl.grad(u), ufl.grad(v)) * dx + 0.00001 * ufl.inner(u, v) * dx
+F = ufl.inner(ufl.grad(u), ufl.grad(v)) * dx
 F += ufl.inner(ufl.grad(u_sub), ufl.grad(v_sub)) * ds(1)
 
-h_l = dolfinx.fem.Constant(mesh, 50.0)
+
+# advection term NOTE: this seems to be ignored....
+# chaning vel_x doesn't change the solution u_sub at the outlet
+# we would expect that increasing vel_x would decrease u_sub at the outlet
+
+vel_x = 10
+vel = dolfinx.fem.Constant(submesh, PETSc.ScalarType([vel_x, 0.0]))
+
+F += ufl.inner(ufl.dot(ufl.grad(u_sub), vel), v_sub) * ds(1)
+
+# coupling term
+h_l = dolfinx.fem.Constant(mesh, 0.1)
 flux = h_l * (u - u_sub)
 
 F += flux * v * ds(1)
 F += -flux * v_sub * ds(1)
 
 forms = ufl.extract_blocks(F)
-
+print(forms[0])
+print(forms[1])
 # Dirichlet BC left
 bc_top_dofs = dolfinx.fem.locate_dofs_topological(
     V_bulk,
@@ -100,7 +116,7 @@ bc_left = dolfinx.fem.dirichletbc(
     dolfinx.default_scalar_type(1.0),
     bc_left_dofs,
     V_sub,
-)
+)  # NOTE: <--- pretty certain this BC is ignored for some reason.....
 # Nonlinear problem
 
 problem = dolfinx.fem.petsc.NonlinearProblem(
