@@ -80,14 +80,16 @@ F += ufl.inner(ufl.grad(u_sub), ufl.grad(v_sub)) * ds(1)
 # chaning vel_x doesn't change the solution u_sub at the outlet
 # we would expect that increasing vel_x would decrease u_sub at the outlet
 
-vel_x = 10
+vel_x = 0
 # NOTE: has to be a 2D vector other wise dolfinx complains
-vel = dolfinx.fem.Constant(submesh, PETSc.ScalarType([vel_x, 0.0]))
+# NOTE 2: i tried setting the y component != 0 and I saw a change!
+# could it be that the vector is somehow transposed?
+vel = dolfinx.fem.Constant(submesh, PETSc.ScalarType([vel_x, vel_x]))
 
 F += ufl.inner(ufl.dot(ufl.grad(u_sub), vel), v_sub) * ds(1)
 
 # coupling term
-h_l = dolfinx.fem.Constant(mesh, 0.1)
+h_l = dolfinx.fem.Constant(mesh, 0.4)
 flux = h_l * (u - u_sub)
 
 F += flux * v * ds(1)
