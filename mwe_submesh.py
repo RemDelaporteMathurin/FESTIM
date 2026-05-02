@@ -9,10 +9,14 @@ import pyvista
 import ufl
 from dolfinx import plot
 
+dx = 1 / 5
+L = 100
+
+nx = int(L / dx)
 mesh = dolfinx.mesh.create_rectangle(
     MPI.COMM_WORLD,
-    [np.array([0, 0]), np.array([10, 1])],
-    [50, 10],
+    [np.array([0, 0]), np.array([L, 1])],
+    [nx, 10],
     cell_type=dolfinx.mesh.CellType.quadrilateral,
 )
 vdim = mesh.topology.dim
@@ -26,7 +30,7 @@ tag_to_marker = {
     1: lambda x: np.isclose(x[1], 0),  # bottom
     2: lambda x: np.isclose(x[1], 1),  # top
     3: lambda x: np.isclose(x[0], 0),  # left
-    4: lambda x: np.isclose(x[0], 10),  # right
+    4: lambda x: np.isclose(x[0], L),  # right
 }
 
 facets = np.array([], dtype=np.int64)
@@ -83,7 +87,7 @@ F += ufl.inner(ufl.grad(u_sub), ufl.grad(v_sub)) * ds(1)
 # chaning vel_x doesn't change the solution u_sub at the outlet
 # we would expect that increasing vel_x would decrease u_sub at the outlet
 
-vel_x = 0
+vel_x = 10
 # NOTE: has to be a 2D vector other wise dolfinx complains
 # NOTE 2: i tried setting the y component != 0 and I saw a change!
 # could it be that the vector is somehow transposed?
@@ -168,7 +172,7 @@ grid.set_active_scalars("c")
 
 # Make two points to construct the line between
 a = [0, 0, 0]
-b = [10, 0, 0]
+b = [L, 0, 0]
 sample = grid.sample_over_line(a, b, resolution=100)
 
 plt.plot(sample["Distance"], sample["c"])
