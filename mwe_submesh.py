@@ -1,10 +1,13 @@
 from mpi4py import MPI
+from petsc4py import PETSc
 
 import dolfinx
 import dolfinx.fem.petsc
+import matplotlib.pyplot as plt
 import numpy as np
+import pyvista
 import ufl
-from petsc4py import PETSc
+from dolfinx import plot
 
 mesh = dolfinx.mesh.create_rectangle(
     MPI.COMM_WORLD,
@@ -96,8 +99,7 @@ F += flux * v * ds(1)
 F += -flux * v_sub * ds(1)
 
 forms = ufl.extract_blocks(F)
-print(forms[0])
-print(forms[1])
+
 # Dirichlet BC left
 bc_top_dofs = dolfinx.fem.locate_dofs_topological(
     V_bulk,
@@ -136,11 +138,41 @@ problem = dolfinx.fem.petsc.NonlinearProblem(
 problem.solve()
 
 
+# Post processing
+
 with dolfinx.io.VTXWriter(mesh.comm, "results/u.bp", [u]) as writer:
     writer.write(0.0)
 
 with dolfinx.io.VTXWriter(submesh.comm, "results/u_sub.bp", [u_sub]) as writer:
     writer.write(0.0)
 
-print(u.x.array)
-print(u_sub.x.array)
+topology, cell_types, geometry = plot.vtk_mesh(u.function_space)
+grid = pyvista.UnstructuredGrid(topology, cell_types, geometry)
+grid.point_data["c"] = u.x.array
+grid.set_active_scalars("c")
+
+plotter = pyvista.Plotter()
+
+plotter.add_mesh(grid)
+plotter.view_xy()
+
+if not pyvista.OFF_SCREEN:
+    plotter.show()
+else:
+    figure = plotter.screenshot("u.png")
+
+topology, cell_types, geometry = plot.vtk_mesh(u_sub.function_space)
+grid = pyvista.UnstructuredGrid(topology, cell_types, geometry)
+grid.point_data["c"] = u_sub.x.array
+grid.set_active_scalars("c")
+
+# Make two points to construct the line between
+a = [0, 0, 0]
+b = [10, 0, 0]
+sample = grid.sample_over_line(a, b, resolution=100)
+
+plt.plot(sample["Distance"], sample["c"])
+plt.ylim(0, 1)
+plt.xlabel("x")
+plt.ylabel("u_sub")
+plt.show()
