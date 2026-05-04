@@ -91,9 +91,16 @@ vel_x = 10
 # NOTE: has to be a 2D vector other wise dolfinx complains
 # NOTE 2: i tried setting the y component != 0 and I saw a change!
 # could it be that the vector is somehow transposed?
-vel = dolfinx.fem.Constant(submesh, PETSc.ScalarType([vel_x, vel_x]))
 
+# Option 1: Full grad with 2D vector. Works but odd that we need a 2D velocity
+vel = dolfinx.fem.Constant(submesh, PETSc.ScalarType([vel_x, vel_x]))
 F += ufl.inner(ufl.dot(ufl.grad(u_sub), vel), v_sub) * ds(1)
+
+# Option 2: just du/dx * vel_x. Doesn't work at all
+# F += ufl.inner(u_sub.dx(0) * vel_x, v_sub) * ds(1)
+
+# Option 3: just du/dy * vel_x. Works but doesn't make sense since d/dy....
+# F += ufl.inner(u_sub.dx(1) * vel_x, v_sub) * ds(1)
 
 # coupling term
 h_l = dolfinx.fem.Constant(mesh, 0.4)
@@ -125,7 +132,7 @@ bc_left = dolfinx.fem.dirichletbc(
     dolfinx.default_scalar_type(1.0),
     bc_left_dofs,
     V_sub,
-)  # NOTE: <--- pretty certain this BC is ignored for some reason.....
+)
 # Nonlinear problem
 
 problem = dolfinx.fem.petsc.NonlinearProblem(
@@ -140,7 +147,20 @@ problem = dolfinx.fem.petsc.NonlinearProblem(
 )
 
 problem.solve()
+import basix
 
+element = basix.ufl.element("DG", submesh.topology.cell_name(), 0, shape=(1,))
+V_grad_sub = dolfinx.fem.functionspace(submesh, element)
+grad_u_sub = dolfinx.fem.Function(V_grad_sub)
+# expr = dolfinx.fem.Expression(ufl.grad(u_sub), V_grad_sub.element.interpolation_points)
+expr = dolfinx.fem.Expression(
+    u_sub.dx(0) * vel_x, V_grad_sub.element.interpolation_points
+)
+grad_u_sub.interpolate(expr)
+
+print(grad_u_sub.x.array)
+
+breakpoint()
 
 # Post processing
 
