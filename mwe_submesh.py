@@ -1,3 +1,20 @@
+"""
+$$
+\Delta u + J = 0 \ \text{,  on} \ \Omega\\
+\Delta u_{sub} + v \nabla u_{sub} -J = 0 \text{,  on} \ \Gamma_1\\
+J = h_l (u_{sub} - u)
+$$
+
+
+Boundary conditions:
+
+$$
+u = 0 \ \text{,  on} \ \Gamma_2 \\
+u_{sub} = 1 \ \text{,  on} \  x=0
+$$
+
+"""
+
 from mpi4py import MPI
 from petsc4py import PETSc
 
@@ -151,14 +168,16 @@ import basix
 
 element = basix.ufl.element("DG", submesh.topology.cell_name(), 0, shape=(1,))
 V_grad_sub = dolfinx.fem.functionspace(submesh, element)
-grad_u_sub = dolfinx.fem.Function(V_grad_sub)
-# expr = dolfinx.fem.Expression(ufl.grad(u_sub), V_grad_sub.element.interpolation_points)
-expr = dolfinx.fem.Expression(
-    u_sub.dx(0) * vel_x, V_grad_sub.element.interpolation_points
-)
-grad_u_sub.interpolate(expr)
+u_sub_dx0 = dolfinx.fem.Function(V_grad_sub)
+u_sub_dx1 = dolfinx.fem.Function(V_grad_sub)
+expr0 = dolfinx.fem.Expression(u_sub.dx(0), V_grad_sub.element.interpolation_points)
+expr1 = dolfinx.fem.Expression(u_sub.dx(1), V_grad_sub.element.interpolation_points)
+u_sub_dx0.interpolate(expr0)
+u_sub_dx1.interpolate(expr1)
 
-print(grad_u_sub.x.array)
+print(u_sub_dx0.x.array)
+print(u_sub_dx1.x.array)
+
 
 breakpoint()
 
