@@ -104,7 +104,7 @@ F += ufl.inner(ufl.grad(u_sub), ufl.grad(v_sub)) * ds(1)
 # chaning vel_x doesn't change the solution u_sub at the outlet
 # we would expect that increasing vel_x would decrease u_sub at the outlet
 
-vel_x = 10
+vel_x = 30
 # NOTE: has to be a 2D vector other wise dolfinx complains
 # NOTE 2: i tried setting the y component != 0 and I saw a change!
 # could it be that the vector is somehow transposed?
@@ -164,22 +164,20 @@ problem = dolfinx.fem.petsc.NonlinearProblem(
 )
 
 problem.solve()
-import basix
+# import basix
 
-element = basix.ufl.element("DG", submesh.topology.cell_name(), 0, shape=(1,))
-V_grad_sub = dolfinx.fem.functionspace(submesh, element)
-u_sub_dx0 = dolfinx.fem.Function(V_grad_sub)
-u_sub_dx1 = dolfinx.fem.Function(V_grad_sub)
-expr0 = dolfinx.fem.Expression(u_sub.dx(0), V_grad_sub.element.interpolation_points)
-expr1 = dolfinx.fem.Expression(u_sub.dx(1), V_grad_sub.element.interpolation_points)
-u_sub_dx0.interpolate(expr0)
-u_sub_dx1.interpolate(expr1)
+# element = basix.ufl.element("DG", submesh.topology.cell_name(), 0, shape=(1,))
+# V_grad_sub = dolfinx.fem.functionspace(submesh, element)
+# u_sub_dx0 = dolfinx.fem.Function(V_grad_sub)
+# u_sub_dx1 = dolfinx.fem.Function(V_grad_sub)
+# expr0 = dolfinx.fem.Expression(u_sub.dx(0), V_grad_sub.element.interpolation_points)
+# expr1 = dolfinx.fem.Expression(u_sub.dx(1), V_grad_sub.element.interpolation_points)
+# u_sub_dx0.interpolate(expr0)
+# u_sub_dx1.interpolate(expr1)
 
-print(u_sub_dx0.x.array)
-print(u_sub_dx1.x.array)
+# print(u_sub_dx0.x.array)
+# print(u_sub_dx1.x.array)
 
-
-breakpoint()
 
 # Post processing
 
